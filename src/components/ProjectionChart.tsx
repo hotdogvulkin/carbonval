@@ -45,19 +45,19 @@ export default function ProjectionChart({ data }: Props) {
           axisLine={false}
           width={56}
         />
-        <Tooltip
-          formatter={(value: number, name: string) => [
-            formatTooltipValue(value),
-            name.charAt(0).toUpperCase() + name.slice(1),
-          ]}
-          labelFormatter={(label: number) => `Year ${label}`}
-          contentStyle={{
-            fontSize: 12,
-            borderRadius: 8,
-            border: '1px solid #e5e7eb',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-          }}
-        />
+          <Tooltip
+            formatter={(value: unknown, name: unknown) => [
+              formatTooltipValue(value as number),
+              String(name).charAt(0).toUpperCase() + String(name).slice(1),
+            ]}
+            labelFormatter={(label: unknown) => `Year ${label}`}
+            contentStyle={{
+              fontSize: 12,
+              borderRadius: 8,
+              border: '1px solid #e5e7eb',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+            }}
+          />
         <Legend
           wrapperStyle={{ fontSize: 11, paddingTop: 8 }}
           formatter={(value: string) =>

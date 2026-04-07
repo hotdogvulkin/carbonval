@@ -1,5 +1,5 @@
 import type { ValuationInputs, LandType, ProjectDuration, PriceScenario, ProtectionStatus } from '../types'
-import { LAND_TYPE_LABELS, PRICE_SCENARIO_LABELS } from '../lib/constants'
+import { LAND_TYPE_LABELS } from '../lib/constants'
 
 interface Props {
   inputs: ValuationInputs
