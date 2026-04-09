@@ -2,16 +2,21 @@ import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import ResultsPanel from '../components/ResultsPanel'
-import type { ValuationInputs } from '../types'
+import type { ValuationInputs, LandType, ProjectDuration, PriceScenario, ProtectionStatus } from '../types'
 
 interface ValuationRow {
-  inputs: ValuationInputs
+  land_type: string
+  acres: number
+  duration: number
+  price_scenario: string
+  protection_status: string
   created_at: string
 }
 
 export default function Valuation() {
   const { id } = useParams<{ id: string }>()
-  const [row, setRow] = useState<ValuationRow | null>(null)
+  const [inputs, setInputs] = useState<ValuationInputs | null>(null)
+  const [savedAt, setSavedAt] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
 
@@ -24,14 +29,21 @@ export default function Valuation() {
 
     supabase
       .from('valuations')
-      .select('inputs, created_at')
+      .select('land_type, acres, duration, price_scenario, protection_status, created_at')
       .eq('id', id)
       .single()
       .then(({ data, error }: { data: ValuationRow | null; error: { message: string } | null }) => {
         if (error || !data) {
           setNotFound(true)
         } else {
-          setRow(data)
+          setInputs({
+            landType: data.land_type as LandType,
+            acres: data.acres,
+            duration: data.duration as ProjectDuration,
+            priceScenario: data.price_scenario as PriceScenario,
+            protectionStatus: data.protection_status as ProtectionStatus,
+          })
+          setSavedAt(data.created_at)
         }
         setLoading(false)
       })
@@ -76,11 +88,11 @@ export default function Valuation() {
           </div>
         )}
 
-        {!loading && row && (
+        {!loading && inputs && (
           <ResultsPanel
-            inputs={row.inputs}
+            inputs={inputs}
             readOnly
-            savedAt={row.created_at}
+            savedAt={savedAt ?? undefined}
           />
         )}
       </main>
