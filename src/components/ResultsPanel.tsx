@@ -1,14 +1,20 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import type { ValuationInputs } from '../types'
 import { calculateValuation, generateProjection, formatCurrency, formatNumber } from '../lib/carbonModel'
+import { saveValuation } from '../lib/saveValuation'
 import ProjectionChart from './ProjectionChart'
+
+type SaveState = 'idle' | 'loading' | 'copied' | 'error'
 
 interface Props {
   inputs: ValuationInputs
+  readOnly?: boolean
+  savedAt?: string
 }
 
-export default function ResultsPanel({ inputs }: Props) {
+export default function ResultsPanel({ inputs, readOnly = false, savedAt }: Props) {
   const isValid = inputs.acres > 0 && !isNaN(inputs.acres)
+  const [saveState, setSaveState] = useState<SaveState>('idle')
 
   const results = useMemo(() => {
     if (!isValid) return null
@@ -19,6 +25,29 @@ export default function ResultsPanel({ inputs }: Props) {
     if (!isValid) return []
     return generateProjection(inputs)
   }, [inputs, isValid])
+
+  async function handleSave() {
+    if (!results) return
+    setSaveState('loading')
+
+    const id = await saveValuation(inputs, results)
+
+    if (!id) {
+      setSaveState('error')
+      return
+    }
+
+    const url = `${window.location.origin}/v/${id}`
+    try {
+      await navigator.clipboard.writeText(url)
+      setSaveState('copied')
+      setTimeout(() => setSaveState('idle'), 2000)
+    } catch {
+      // clipboard denied — still show the URL
+      setSaveState('copied')
+      setTimeout(() => setSaveState('idle'), 2000)
+    }
+  }
 
   if (!isValid) {
     return (
@@ -42,6 +71,29 @@ export default function ResultsPanel({ inputs }: Props) {
           Educational estimate based on IPCC coefficients and VCM market data.
           Actual project values require third-party verification.
         </p>
+
+        {savedAt && (
+          <p className="text-xs text-gray-400 mt-2">
+            Saved on {new Date(savedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+          </p>
+        )}
+
+        {/* Save & Share button */}
+        {!readOnly && (
+          <div className="mt-4">
+            <button
+              onClick={handleSave}
+              disabled={saveState === 'loading'}
+              className="w-full py-2.5 px-4 rounded-xl text-sm font-medium transition-colors
+                bg-green-900 text-white hover:bg-green-800 disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {saveState === 'loading' && 'Saving…'}
+              {saveState === 'copied' && 'Link copied!'}
+              {saveState === 'idle' && 'Save & Share'}
+              {saveState === 'error' && 'Save failed — try again'}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Secondary metrics */}
@@ -87,6 +139,18 @@ export default function ResultsPanel({ inputs }: Props) {
         </p>
         <ProjectionChart data={projection} />
       </div>
+
+      {/* Run your own link (read-only mode) */}
+      {readOnly && (
+        <div className="text-center">
+          <a
+            href="/"
+            className="text-sm text-green-800 hover:text-green-600 font-medium transition-colors"
+          >
+            Run your own valuation →
+          </a>
+        </div>
+      )}
     </div>
   )
 }
