@@ -355,8 +355,118 @@ export default function Methodology() {
           </p>
         </Section>
 
-        {/* Section 9 — Full references */}
-        <Section number="9" title="Full References">
+        {/* Section 9 — Satellite Land Cover Detection */}
+        <Section number="9" title="Satellite Land Cover Detection">
+          <p>
+            CarbonVal V2 uses the USGS National Land Cover Database (NLCD) 2021 to
+            automatically classify land cover type at any US coordinate. NLCD 2021
+            is produced by the Multi-Resolution Land Characteristics Consortium
+            (MRLC), a partnership of federal agencies including USGS, EPA, and NASA.
+            It provides land cover classification for the contiguous United States at
+            30-meter spatial resolution, updated on a roughly five-year cycle.
+          </p>
+          <p>
+            Classification is performed at runtime by querying the MRLC's public WMS
+            endpoint using a GetFeatureInfo request centered on the dropped pin
+            coordinate. The response returns a <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs font-mono text-gray-800">PALETTE_INDEX</code> value
+            corresponding to one of 20 NLCD land cover classes. CarbonVal maps these
+            to its eight land type categories as follows:
+          </p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left">
+                  <th className="pb-2 pr-4 text-xs font-semibold text-gray-400 uppercase tracking-wide">NLCD Class Code</th>
+                  <th className="pb-2 pr-4 text-xs font-semibold text-gray-400 uppercase tracking-wide">NLCD Label</th>
+                  <th className="pb-2 text-xs font-semibold text-gray-400 uppercase tracking-wide">CarbonVal Land Type</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  { code: '41', label: 'Deciduous Forest', type: 'Deciduous Forest' },
+                  { code: '42', label: 'Evergreen Forest', type: 'Evergreen Forest' },
+                  { code: '43', label: 'Mixed Forest', type: 'Mixed Forest' },
+                  { code: '52', label: 'Shrub/Scrub', type: 'Shrubland' },
+                  { code: '71', label: 'Grassland/Herbaceous', type: 'Grassland' },
+                  { code: '81, 82', label: 'Pasture/Hay, Cultivated Crops', type: 'Cropland' },
+                  { code: '90, 95', label: 'Woody Wetlands, Emergent Herbaceous Wetlands', type: 'Wetland' },
+                  { code: '11, 12, 21–24, 31', label: 'Open Water, Ice/Snow, Developed, Barren Land', type: 'Other' },
+                ].map(row => (
+                  <tr key={row.code} className="border-t border-gray-100">
+                    <td className="py-2 pr-4 font-mono text-xs text-green-900">{row.code}</td>
+                    <td className="py-2 pr-4 text-gray-600">{row.label}</td>
+                    <td className="py-2 font-medium text-gray-900">{row.type}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p>
+            NLCD classifies land cover at a single 30m pixel centered on the pin
+            location. For heterogeneous parcels, the detected type may not represent
+            the full parcel. Users should verify the detected type against local
+            knowledge and override if necessary.
+          </p>
+          <p>
+            Source:{' '}
+            <Citation href="https://www.mrlc.gov">
+              Multi-Resolution Land Characteristics Consortium (MRLC)
+            </Citation>
+            .{' '}
+            Homer, C., et al. "Conterminous United States land cover change patterns
+            2001–2016 from the 2016 National Land Cover Database."
+            <em> ISPRS Journal of Photogrammetry and Remote Sensing</em>, 162, 2020.
+          </p>
+        </Section>
+
+        {/* Section 10 — Known Limitations */}
+        <Section number="10" title="Known Limitations">
+          <p>
+            <span className="font-semibold text-gray-900">Rate generalization.</span>{' '}
+            Sequestration rates are IPCC Tier 1 global defaults. Actual rates for a
+            specific parcel in New England, the Southeast, or the Pacific Northwest
+            may differ materially based on species composition, stand age, soil type,
+            and local climate. Users with site-specific data should treat CarbonVal
+            outputs as order-of-magnitude estimates only.
+          </p>
+          <p>
+            <span className="font-semibold text-gray-900">Fixed additionality.</span>{' '}
+            The 0.75 additionality factor is a conservative fixed assumption. Real
+            carbon projects require project-specific additionality demonstration,
+            often involving counterfactual land use analysis, threat mapping, and
+            legal review. This is the single largest source of uncertainty in the
+            model.
+          </p>
+          <p>
+            <span className="font-semibold text-gray-900">Static pricing.</span>{' '}
+            Price scenarios are fixed point-in-time estimates based on 2023–2024 VCM
+            data. Carbon markets are volatile — prices have ranged from under $1 to
+            over $50 per tonne in the voluntary market over the past decade. V3 will
+            address this with a monthly-updated price feed.
+          </p>
+          <p>
+            <span className="font-semibold text-gray-900">Single-pixel land classification.</span>{' '}
+            NLCD classification is based on a single 30m pixel at the pin location.
+            Large or heterogeneous parcels may contain multiple land cover types that
+            this tool does not capture. A full project would require parcel boundary
+            integration and area-weighted classification.
+          </p>
+          <p>
+            <span className="font-semibold text-gray-900">US coverage only.</span>{' '}
+            NLCD is a US-specific dataset. The tool does not support international
+            parcels.
+          </p>
+          <p>
+            <span className="font-semibold text-gray-900">No permanence modeling.</span>{' '}
+            CarbonVal does not model specific reversal risks such as wildfire
+            probability, pest outbreak, or development pressure. The permanence
+            factor is a blunt instrument. Actual registry buffer pool requirements
+            vary by methodology, geography, and project risk profile.
+          </p>
+        </Section>
+
+        {/* Section 11 — Full references */}
+        <Section number="11" title="Full References">
           <ol className="space-y-3 list-none">
             {[
               {
@@ -388,6 +498,16 @@ export default function Methodology() {
                 id: 6,
                 text: 'IPCC. Climate Change 2022: Impacts, Adaptation and Vulnerability. Contribution of Working Group II to the Sixth Assessment Report. Cambridge University Press, 2022.',
                 href: 'https://www.ipcc.ch/report/ar6/wg2/',
+              },
+              {
+                id: 7,
+                text: 'Homer, C., Dewitz, J., Jin, S., Xian, G., Costello, C., Danielson, P., Gass, L., Funk, M., Wickham, J., Stehman, S., Auch, R., and Riitters, K. Conterminous United States land cover change patterns 2001–2016 from the 2016 National Land Cover Database. ISPRS Journal of Photogrammetry and Remote Sensing, 162, 184–199, 2020.',
+                href: 'https://www.mrlc.gov',
+              },
+              {
+                id: 8,
+                text: 'Multi-Resolution Land Characteristics Consortium (MRLC). National Land Cover Database 2021. U.S. Geological Survey, 2023.',
+                href: 'https://www.mrlc.gov',
               },
             ].map(ref => (
               <li key={ref.id} className="flex gap-3">
