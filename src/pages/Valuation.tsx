@@ -27,11 +27,11 @@ export default function Valuation() {
       .select('inputs, created_at')
       .eq('id', id)
       .single()
-      .then(({ data, error }) => {
+      .then(({ data, error }: { data: ValuationRow | null; error: { message: string } | null }) => {
         if (error || !data) {
           setNotFound(true)
         } else {
-          setRow(data as ValuationRow)
+          setRow(data)
         }
         setLoading(false)
       })
