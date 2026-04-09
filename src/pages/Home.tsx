@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import InputPanel from '../components/InputPanel'
 import ResultsPanel from '../components/ResultsPanel'
+import MapPicker from '../components/MapPicker'
 import type { ValuationInputs } from '../types'
+import type { ClassificationResult } from '../lib/earthEngine'
 
 const DEFAULT_INPUTS: ValuationInputs = {
   landType: 'evergreenForest',
@@ -13,6 +15,12 @@ const DEFAULT_INPUTS: ValuationInputs = {
 
 export default function Home() {
   const [inputs, setInputs] = useState<ValuationInputs>(DEFAULT_INPUTS)
+  const [autoDetected, setAutoDetected] = useState(false)
+
+  function handleClassify(result: ClassificationResult) {
+    setInputs(prev => ({ ...prev, landType: result.landType }))
+    setAutoDetected(true)
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -36,11 +44,30 @@ export default function Home() {
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-6 py-8">
+      <main className="max-w-6xl mx-auto px-6 py-8 space-y-6">
+
+        <MapPicker onClassify={handleClassify} />
+
+        {autoDetected && (
+          <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg px-4 py-2.5">
+            <p className="text-sm text-green-800">
+              Land type auto-detected from satellite data — you can override below.
+            </p>
+            <button
+              onClick={() => setAutoDetected(false)}
+              className="text-green-600 hover:text-green-800 text-lg leading-none ml-4"
+              aria-label="Dismiss"
+            >
+              &times;
+            </button>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <InputPanel inputs={inputs} onChange={setInputs} />
           <ResultsPanel inputs={inputs} />
         </div>
+
       </main>
     </div>
   )

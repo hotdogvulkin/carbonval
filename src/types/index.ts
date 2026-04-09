@@ -1,3 +1,5 @@
+export type { ClassificationResult } from '../lib/earthEngine'
+
 export type LandType =
   | 'evergreenForest'
   | 'deciduousForest'
