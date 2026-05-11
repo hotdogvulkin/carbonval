@@ -4,18 +4,18 @@ import {
   PERMANENCE_FACTORS,
   CO_BENEFITS,
   PRICE_PER_TON,
-  ADDITIONALITY_FACTOR,
+  ADDITIONALITY_LEVELS,
   VERIFICATION_COST,
   TONS_PER_CAR_PER_YEAR,
   ACRES_TO_HECTARES,
 } from './constants'
 
 export function calculateValuation(inputs: ValuationInputs): ValuationOutputs {
-  const { landType, acres, duration, priceScenario, protectionStatus } = inputs
+  const { landType, acres, duration, priceScenario, protectionStatus, additionalityLevel } = inputs
 
   const hectares = acres * ACRES_TO_HECTARES
   const annualSequestration = hectares * SEQUESTRATION_RATES[landType]
-  const adjustedAnnual = annualSequestration * PERMANENCE_FACTORS[protectionStatus] * ADDITIONALITY_FACTOR
+  const adjustedAnnual = annualSequestration * PERMANENCE_FACTORS[protectionStatus] * ADDITIONALITY_LEVELS[additionalityLevel]
   const totalCredits = adjustedAnnual * duration
   const effectivePrice = PRICE_PER_TON[priceScenario] * CO_BENEFITS[landType]
   const grossValue = totalCredits * effectivePrice
@@ -39,13 +39,13 @@ export function calculateValuation(inputs: ValuationInputs): ValuationOutputs {
 export function generateProjection(
   inputs: ValuationInputs
 ): ProjectionDataPoint[] {
-  const { landType, acres, protectionStatus } = inputs
+  const { landType, acres, protectionStatus, additionalityLevel } = inputs
   const hectares = acres * ACRES_TO_HECTARES
   const annualSequestration = hectares * SEQUESTRATION_RATES[landType]
   const adjustedAnnual =
     annualSequestration *
     PERMANENCE_FACTORS[protectionStatus] *
-    ADDITIONALITY_FACTOR
+    ADDITIONALITY_LEVELS[additionalityLevel]
 
   const points: ProjectionDataPoint[] = []
 

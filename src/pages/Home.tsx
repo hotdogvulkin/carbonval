@@ -11,6 +11,7 @@ const DEFAULT_INPUTS: ValuationInputs = {
   duration: 20,
   priceScenario: 'mid',
   protectionStatus: 'protected',
+  additionalityLevel: 'moderate',
 }
 
 export default function Home() {

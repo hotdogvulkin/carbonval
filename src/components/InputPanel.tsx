@@ -1,5 +1,9 @@
-import type { ValuationInputs, LandType, ProjectDuration, PriceScenario, ProtectionStatus } from '../types'
-import { LAND_TYPE_LABELS } from '../lib/constants'
+import type { ValuationInputs, LandType, ProjectDuration, PriceScenario, ProtectionStatus, AdditionalityLevel } from '../types'
+import {
+  LAND_TYPE_LABELS,
+  ADDITIONALITY_LEVEL_LABELS,
+  ADDITIONALITY_LEVEL_DESCRIPTIONS,
+} from '../lib/constants'
 
 interface Props {
   inputs: ValuationInputs
@@ -19,6 +23,7 @@ const LAND_TYPES: LandType[] = [
 
 const DURATIONS: ProjectDuration[] = [10, 20, 30]
 const PRICE_SCENARIOS: PriceScenario[] = ['conservative', 'mid', 'premium']
+const ADDITIONALITY_LEVELS: AdditionalityLevel[] = ['conservative', 'moderate', 'high']
 
 export default function InputPanel({ inputs, onChange }: Props) {
   function set<K extends keyof ValuationInputs>(key: K, value: ValuationInputs[K]) {
@@ -150,6 +155,38 @@ export default function InputPanel({ inputs, onChange }: Props) {
         </div>
         <p className="text-xs text-gray-400">
           Unprotected parcels receive an 18% permanence discount per IPCC guidelines.
+        </p>
+      </div>
+
+      {/* Additionality */}
+      <div className="space-y-1.5">
+        <label className="text-sm font-medium text-gray-700">
+          Additionality
+        </label>
+        <div className="space-y-2">
+          {ADDITIONALITY_LEVELS.map(level => (
+            <button
+              key={level}
+              onClick={() => set('additionalityLevel', level)}
+              className={`w-full rounded-lg px-3 py-2.5 text-left transition-colors ${
+                inputs.additionalityLevel === level
+                  ? 'bg-green-800 text-white'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              <span className="block text-sm font-medium">
+                {ADDITIONALITY_LEVEL_LABELS[level]}
+              </span>
+              <span className={`block text-xs mt-0.5 ${
+                inputs.additionalityLevel === level ? 'text-green-200' : 'text-gray-400'
+              }`}>
+                {ADDITIONALITY_LEVEL_DESCRIPTIONS[level]}
+              </span>
+            </button>
+          ))}
+        </div>
+        <p className="text-xs text-gray-400">
+          Calibrated to Verra VM0007 additionality scoring guidance.
         </p>
       </div>
     </div>

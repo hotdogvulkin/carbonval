@@ -17,6 +17,7 @@ export async function saveValuation(
         duration: inputs.duration,
         price_scenario: inputs.priceScenario,
         protection_status: inputs.protectionStatus,
+        additionality_level: inputs.additionalityLevel,
         lat: coords?.lat ?? null,
         lng: coords?.lng ?? null,
         nlcd_label: classification?.nlcdLabel ?? null,

@@ -1,4 +1,4 @@
-import { SEQUESTRATION_RATES, PERMANENCE_FACTORS, ADDITIONALITY_FACTOR, VERIFICATION_COST, PRICE_PER_TON, CO_BENEFITS } from '../lib/constants'
+import { SEQUESTRATION_RATES, PERMANENCE_FACTORS, ADDITIONALITY_LEVELS, VERIFICATION_COST, PRICE_PER_TON, CO_BENEFITS } from '../lib/constants'
 
 interface CitationProps {
   children: React.ReactNode
@@ -199,22 +199,52 @@ export default function Methodology() {
           <p>
             Additionality is the principle that carbon credits should only represent
             sequestration that would not have occurred without the carbon project —
-            i.e., the project must go beyond "business as usual." CarbonVal applies
-            a conservative fixed additionality factor:
+            i.e., the project must go beyond "business as usual." CarbonVal allows
+            users to select one of three additionality levels, calibrated to{' '}
+            <Citation href="https://verra.org/methodologies/vm0007-redd-methodology-framework-redd-mf-v1-6/">
+              Verra VM0007 (REDD Methodology Framework)
+            </Citation>{' '}
+            additionality scoring guidance:
           </p>
-          <div className="bg-gray-50 rounded-lg border border-gray-200 p-4 font-mono text-sm">
-            <p><span className="text-gray-400">Additionality factor:</span> <span className="text-green-900 font-medium">{ADDITIONALITY_FACTOR} (Tier 1 conservative default)</span></p>
+          <div className="bg-gray-50 rounded-lg border border-gray-200 p-4 space-y-3 text-sm">
+            <div>
+              <p className="font-medium text-gray-900">
+                Conservative — {ADDITIONALITY_LEVELS.conservative}
+              </p>
+              <p className="text-gray-500 text-xs mt-0.5">
+                Land likely to be developed or converted without this project. High
+                counterfactual threat; credits reflect only the most defensible
+                additionality claim.
+              </p>
+            </div>
+            <div className="border-t border-gray-200 pt-3">
+              <p className="font-medium text-gray-900">
+                Moderate — {ADDITIONALITY_LEVELS.moderate} (default)
+              </p>
+              <p className="text-gray-500 text-xs mt-0.5">
+                Some development pressure — the IPCC Tier 1 conservative default.
+                Approximately 25% of gross sequestration is assumed to occur
+                regardless of the project.
+              </p>
+            </div>
+            <div className="border-t border-gray-200 pt-3">
+              <p className="font-medium text-gray-900">
+                High — {ADDITIONALITY_LEVELS.high}
+              </p>
+              <p className="text-gray-500 text-xs mt-0.5">
+                Land already informally protected or facing low conversion risk.
+                Only 10% of gross sequestration is assumed to be non-additional.
+                Appropriate for parcels with existing conservation agreements or
+                documented low development pressure.
+              </p>
+            </div>
           </div>
           <p>
-            This value reflects the IPCC Tier 1 conservative assumption that
-            approximately 25% of gross sequestration on any managed parcel would
-            have occurred regardless of the carbon project, due to natural forest
-            growth and existing land management practices. In V3, this will become
-            a user-adjustable input based on additionality scoring per{' '}
-            <Citation href="https://verra.org/methodologies/vm0007-redd-methodology-framework-redd-mf-v1-6/">
-              Verra VM0007
-            </Citation>
-            .
+            These levels are not a substitute for formal additionality demonstration.
+            Real carbon projects require project-specific counterfactual land use
+            analysis, threat mapping, and legal review. Selecting a higher
+            additionality level without site-specific evidence will overstate credit
+            value. This is the single largest source of uncertainty in the model.
           </p>
         </Section>
 
@@ -430,12 +460,12 @@ export default function Methodology() {
             outputs as order-of-magnitude estimates only.
           </p>
           <p>
-            <span className="font-semibold text-gray-900">Fixed additionality.</span>{' '}
-            The 0.75 additionality factor is a conservative fixed assumption. Real
-            carbon projects require project-specific additionality demonstration,
-            often involving counterfactual land use analysis, threat mapping, and
-            legal review. This is the single largest source of uncertainty in the
-            model.
+            <span className="font-semibold text-gray-900">Simplified additionality.</span>{' '}
+            CarbonVal's three additionality levels (0.60 / 0.75 / 0.90) are coarse
+            proxies. Real carbon projects require project-specific additionality
+            demonstration, often involving counterfactual land use analysis, threat
+            mapping, and legal review. This is the single largest source of
+            uncertainty in the model.
           </p>
           <p>
             <span className="font-semibold text-gray-900">Static pricing.</span>{' '}

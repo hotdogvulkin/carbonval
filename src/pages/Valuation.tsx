@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import ResultsPanel from '../components/ResultsPanel'
-import type { ValuationInputs, LandType, ProjectDuration, PriceScenario, ProtectionStatus } from '../types'
+import type { ValuationInputs, LandType, ProjectDuration, PriceScenario, ProtectionStatus, AdditionalityLevel } from '../types'
 
 interface ValuationRow {
   land_type: string
@@ -10,6 +10,7 @@ interface ValuationRow {
   duration: number
   price_scenario: string
   protection_status: string
+  additionality_level: string | null
   created_at: string
 }
 
@@ -29,7 +30,7 @@ export default function Valuation() {
 
     supabase
       .from('valuations')
-      .select('land_type, acres, duration, price_scenario, protection_status, created_at')
+      .select('land_type, acres, duration, price_scenario, protection_status, additionality_level, created_at')
       .eq('id', id)
       .single()
       .then(({ data, error }: { data: ValuationRow | null; error: { message: string } | null }) => {
@@ -42,6 +43,7 @@ export default function Valuation() {
             duration: data.duration as ProjectDuration,
             priceScenario: data.price_scenario as PriceScenario,
             protectionStatus: data.protection_status as ProtectionStatus,
+            additionalityLevel: (data.additionality_level ?? 'moderate') as AdditionalityLevel,
           })
           setSavedAt(data.created_at)
         }

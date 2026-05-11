@@ -16,12 +16,15 @@ export type PriceScenario = 'conservative' | 'mid' | 'premium'
 
 export type ProtectionStatus = 'protected' | 'unprotected'
 
+export type AdditionalityLevel = 'conservative' | 'moderate' | 'high'
+
 export interface ValuationInputs {
   landType: LandType
   acres: number
   duration: ProjectDuration
   priceScenario: PriceScenario
   protectionStatus: ProtectionStatus
+  additionalityLevel: AdditionalityLevel
 }
 
 export interface ValuationOutputs {

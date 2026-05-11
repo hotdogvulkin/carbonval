@@ -1,4 +1,4 @@
-import type { LandType, PriceScenario, ProtectionStatus } from '../types'
+import type { LandType, PriceScenario, ProtectionStatus, AdditionalityLevel } from '../types'
 
 // IPCC 2006 Guidelines for National Greenhouse Gas Inventories
 // Volume 4, Chapter 4 (Forest Land)
@@ -52,8 +52,27 @@ export const PRICE_SCENARIO_LABELS: Record<PriceScenario, string> = {
   premium: 'Premium ($30/ton)',
 }
 
-// IPCC standard assumption for additionality
+// IPCC standard assumption for additionality (kept for reference; UI now uses ADDITIONALITY_LEVELS)
 export const ADDITIONALITY_FACTOR = 0.75
+
+// Verra VM0007-calibrated additionality scoring levels
+export const ADDITIONALITY_LEVELS: Record<AdditionalityLevel, number> = {
+  conservative: 0.60,
+  moderate: 0.75,
+  high: 0.90,
+}
+
+export const ADDITIONALITY_LEVEL_LABELS: Record<AdditionalityLevel, string> = {
+  conservative: 'Conservative',
+  moderate: 'Moderate',
+  high: 'High',
+}
+
+export const ADDITIONALITY_LEVEL_DESCRIPTIONS: Record<AdditionalityLevel, string> = {
+  conservative: 'Land likely to be developed or converted without this project',
+  moderate: 'Some development pressure — default IPCC assumption',
+  high: 'Land already informally protected or low conversion risk',
+}
 
 // Registry and verification cost (Verra, Gold Standard, ACR average)
 export const VERIFICATION_COST = 0.20
