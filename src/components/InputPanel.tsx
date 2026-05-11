@@ -4,6 +4,7 @@ import {
   ADDITIONALITY_LEVEL_LABELS,
   ADDITIONALITY_LEVEL_DESCRIPTIONS,
 } from '../lib/constants'
+import { VCM_MARKET_DATA } from '../lib/marketData'
 
 interface Props {
   inputs: ValuationInputs
@@ -128,9 +129,23 @@ export default function InputPanel({ inputs, onChange }: Props) {
             </button>
           ))}
         </div>
-        <p className="text-xs text-gray-400">
-          Conservative = compliance offset floor · Mid = voluntary retail · Premium = nature-based
-        </p>
+        {/* Market Data callout */}
+        <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 space-y-1.5">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-semibold text-gray-700">Market Data</p>
+            <span className="text-xs text-gray-400">{VCM_MARKET_DATA.referenceYear}</span>
+          </div>
+          {VCM_MARKET_DATA.segments.map(seg => (
+            <div key={seg.segment} className="flex items-start justify-between gap-2">
+              <p className="text-xs text-gray-500 leading-tight">{seg.segment}</p>
+              <p className="text-xs font-mono text-gray-700 shrink-0">{seg.priceRange}</p>
+            </div>
+          ))}
+          <p className="text-xs text-gray-400 pt-0.5 border-t border-gray-200 leading-relaxed">
+            {VCM_MARKET_DATA.source} · {VCM_MARKET_DATA.reportTitle}.{' '}
+            {VCM_MARKET_DATA.updateNote}
+          </p>
+        </div>
       </div>
 
       {/* Protection Status */}
