@@ -1,8 +1,22 @@
 import { useMemo, useState } from 'react'
-import type { ValuationInputs } from '../types'
+import type { ValuationInputs, ScenarioComparisonRow } from '../types'
 import { calculateValuation, generateProjection, calculateScenarioComparison, formatCurrency, formatNumber } from '../lib/carbonModel'
 import { saveValuation } from '../lib/saveValuation'
 import ProjectionChart from './ProjectionChart'
+import ReportExport from './ReportExport'
+
+interface ComparisonTableRow {
+  label: string
+  key: keyof ScenarioComparisonRow
+  format: (v: number) => string
+}
+
+const COMPARISON_ROWS: ComparisonTableRow[] = [
+  { label: 'Total Credits', key: 'totalCredits', format: (v) => `${formatNumber(v, 0)} tCO₂` },
+  { label: 'Gross Value', key: 'grossValue', format: formatCurrency },
+  { label: 'Net Value', key: 'netValue', format: formatCurrency },
+  { label: 'Per-Acre Value', key: 'perAcreValue', format: formatCurrency },
+]
 
 type SaveState = 'idle' | 'loading' | 'copied' | 'error'
 
@@ -85,7 +99,7 @@ export default function ResultsPanel({ inputs, readOnly = false, savedAt }: Prop
 
         {/* Save & Share button */}
         {!readOnly && (
-          <div className="mt-4">
+          <div className="mt-4 space-y-2">
             <button
               onClick={handleSave}
               disabled={saveState === 'loading'}
@@ -97,6 +111,11 @@ export default function ResultsPanel({ inputs, readOnly = false, savedAt }: Prop
               {saveState === 'idle' && 'Save & Share'}
               {saveState === 'error' && 'Save failed — try again'}
             </button>
+            <ReportExport
+              inputs={inputs}
+              results={results!}
+              scenarioComparison={scenarioComparison!}
+            />
           </div>
         )}
       </div>
@@ -148,14 +167,7 @@ export default function ResultsPanel({ inputs, readOnly = false, savedAt }: Prop
               </tr>
             </thead>
             <tbody>
-              {(
-                [
-                  { label: 'Total Credits', key: 'totalCredits', format: (v: number) => `${formatNumber(v, 0)} tCO₂` },
-                  { label: 'Gross Value', key: 'grossValue', format: formatCurrency },
-                  { label: 'Net Value', key: 'netValue', format: formatCurrency },
-                  { label: 'Per-Acre Value', key: 'perAcreValue', format: formatCurrency },
-                ] as { label: string; key: keyof typeof scenarioComparison!.conservative; format: (v: number) => string }[]
-              ).map(row => (
+              {COMPARISON_ROWS.map(row => (
                 <tr key={row.key} className="border-t border-gray-100">
                   <td className="px-5 py-2.5 text-xs font-medium text-gray-500">{row.label}</td>
                   {(['conservative', 'mid', 'premium'] as const).map(scenario => {
