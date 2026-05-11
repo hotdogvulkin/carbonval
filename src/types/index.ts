@@ -45,3 +45,12 @@ export interface ProjectionDataPoint {
   mid: number
   premium: number
 }
+
+export interface ScenarioComparisonRow {
+  totalCredits: number
+  grossValue: number
+  netValue: number
+  perAcreValue: number
+}
+
+export type ScenarioComparison = Record<PriceScenario, ScenarioComparisonRow>

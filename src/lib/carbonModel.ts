@@ -1,4 +1,5 @@
-import type { ValuationInputs, ValuationOutputs, ProjectionDataPoint } from '../types'
+import type { ValuationInputs, ValuationOutputs, ProjectionDataPoint, ScenarioComparison, ScenarioComparisonRow } from '../types'
+import type { PriceScenario } from '../types'
 import {
   SEQUESTRATION_RATES,
   PERMANENCE_FACTORS,
@@ -63,6 +64,22 @@ export function generateProjection(
   }
 
   return points
+}
+
+export function calculateScenarioComparison(inputs: ValuationInputs): ScenarioComparison {
+  const scenarios: PriceScenario[] = ['conservative', 'mid', 'premium']
+  const comparison = {} as ScenarioComparison
+  for (const scenario of scenarios) {
+    const out = calculateValuation({ ...inputs, priceScenario: scenario })
+    const row: ScenarioComparisonRow = {
+      totalCredits: out.totalCredits,
+      grossValue: out.grossValue,
+      netValue: out.netValue,
+      perAcreValue: out.perAcreValue,
+    }
+    comparison[scenario] = row
+  }
+  return comparison
 }
 
 export function formatCurrency(value: number): string {

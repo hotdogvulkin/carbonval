@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import type { ValuationInputs } from '../types'
-import { calculateValuation, generateProjection, formatCurrency, formatNumber } from '../lib/carbonModel'
+import { calculateValuation, generateProjection, calculateScenarioComparison, formatCurrency, formatNumber } from '../lib/carbonModel'
 import { saveValuation } from '../lib/saveValuation'
 import ProjectionChart from './ProjectionChart'
 
@@ -19,6 +19,11 @@ export default function ResultsPanel({ inputs, readOnly = false, savedAt }: Prop
   const results = useMemo(() => {
     if (!isValid) return null
     return calculateValuation(inputs)
+  }, [inputs, isValid])
+
+  const scenarioComparison = useMemo(() => {
+    if (!isValid) return null
+    return calculateScenarioComparison(inputs)
   }, [inputs, isValid])
 
   const projection = useMemo(() => {
@@ -96,28 +101,83 @@ export default function ResultsPanel({ inputs, readOnly = false, savedAt }: Prop
         )}
       </div>
 
-      {/* Secondary metrics */}
+      {/* Annual sequestration metric */}
       <div className="grid grid-cols-2 gap-3">
-        <MetricCard
-          label="Total Credits"
-          value={formatNumber(results!.totalCredits, 0)}
-          unit="tCO₂"
-        />
         <MetricCard
           label="Annual Sequestration"
           value={formatNumber(results!.adjustedAnnual, 1)}
           unit="tCO₂/yr"
         />
         <MetricCard
-          label="Per-Acre Value"
-          value={formatCurrency(results!.perAcreValue)}
-          unit=""
+          label="Total Credits"
+          value={formatNumber(results!.totalCredits, 0)}
+          unit="tCO₂"
         />
-        <MetricCard
-          label="Gross Value"
-          value={formatCurrency(results!.grossValue)}
-          unit=""
-        />
+      </div>
+
+      {/* Three-scenario comparison table */}
+      <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+        <div className="px-5 pt-4 pb-2">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
+            Scenario Comparison
+          </p>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-100">
+                <th className="text-left px-5 py-2 text-xs font-medium text-gray-400 w-1/4"></th>
+                {(['conservative', 'mid', 'premium'] as const).map(scenario => {
+                  const isSelected = inputs.priceScenario === scenario
+                  const label = scenario === 'conservative' ? '$5/ton' : scenario === 'mid' ? '$15/ton' : '$30/ton'
+                  const sublabel = scenario === 'conservative' ? 'Conservative' : scenario === 'mid' ? 'Mid' : 'Premium'
+                  return (
+                    <th
+                      key={scenario}
+                      className={`text-center px-3 py-2 text-xs font-semibold w-1/4 ${
+                        isSelected ? 'text-green-800 bg-green-50' : 'text-gray-500'
+                      }`}
+                    >
+                      <span className="block">{label}</span>
+                      <span className={`block font-normal text-xs ${isSelected ? 'text-green-600' : 'text-gray-400'}`}>
+                        {sublabel}
+                      </span>
+                    </th>
+                  )
+                })}
+              </tr>
+            </thead>
+            <tbody>
+              {(
+                [
+                  { label: 'Total Credits', key: 'totalCredits', format: (v: number) => `${formatNumber(v, 0)} tCO₂` },
+                  { label: 'Gross Value', key: 'grossValue', format: formatCurrency },
+                  { label: 'Net Value', key: 'netValue', format: formatCurrency },
+                  { label: 'Per-Acre Value', key: 'perAcreValue', format: formatCurrency },
+                ] as { label: string; key: keyof typeof scenarioComparison!.conservative; format: (v: number) => string }[]
+              ).map(row => (
+                <tr key={row.key} className="border-t border-gray-100">
+                  <td className="px-5 py-2.5 text-xs font-medium text-gray-500">{row.label}</td>
+                  {(['conservative', 'mid', 'premium'] as const).map(scenario => {
+                    const isSelected = inputs.priceScenario === scenario
+                    return (
+                      <td
+                        key={scenario}
+                        className={`text-center px-3 py-2.5 text-xs font-mono ${
+                          isSelected
+                            ? 'bg-green-50 text-green-900 font-semibold'
+                            : 'text-gray-600'
+                        }`}
+                      >
+                        {row.format(scenarioComparison![scenario][row.key])}
+                      </td>
+                    )
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Car equivalent */}
