@@ -36,12 +36,20 @@ export default function Home() {
             </p>
           </div>
 
-          <a
-            href="/methodology"
-            className="text-sm text-green-800 hover:text-green-600 font-medium transition-colors"
-          >
-            Methodology {'\u2192'}
-          </a>
+          <nav className="flex items-center gap-5">
+            <a
+              href="/compliance"
+              className="text-sm text-green-800 hover:text-green-600 font-medium transition-colors"
+            >
+              Compliance Estimator
+            </a>
+            <a
+              href="/methodology"
+              className="text-sm text-green-800 hover:text-green-600 font-medium transition-colors"
+            >
+              Methodology {'\u2192'}
+            </a>
+          </nav>
         </div>
       </header>
 

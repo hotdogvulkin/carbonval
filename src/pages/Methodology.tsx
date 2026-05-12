@@ -1,4 +1,16 @@
 import { SEQUESTRATION_RATES, PERMANENCE_FACTORS, ADDITIONALITY_LEVELS, VERIFICATION_COST, PRICE_PER_TON, CO_BENEFITS } from '../lib/constants'
+import {
+  COVERAGE_THRESHOLD,
+  VOLUNTARY_THRESHOLD,
+  YEAR1_SURRENDER_PCT,
+  YEAR2_SURRENDER_PCT,
+  YEAR3_SURRENDER_PCT,
+  OFFSET_ELIGIBILITY_LIMIT,
+  DEFAULT_ALLOWANCE_PRICE,
+  DEFAULT_OFFSET_PRICE,
+  ANNUAL_CAP_DECLINE,
+  ANNUAL_PRICE_FLOOR_INCREASE,
+} from '../lib/carbConstants'
 
 interface CitationProps {
   children: React.ReactNode
@@ -495,8 +507,98 @@ export default function Methodology() {
           </p>
         </Section>
 
-        {/* Section 11 — Full references */}
-        <Section number="11" title="Full References">
+        {/* Section 11 — CARB Compliance Module */}
+        <Section number="11" title="CARB Compliance Module">
+          <p>
+            The CARB compliance module estimates cap-and-trade exposure for California-covered
+            entities under the{' '}
+            <Citation href="https://ww2.arb.ca.gov/our-work/programs/cap-and-trade-program">
+              California Cap-and-Trade Program
+            </Citation>
+            . All constants are derived from{' '}
+            <Citation href="https://govt.westlaw.com/calregs/Browse/Home/California/CaliforniaCodeofRegulations?guid=I5D9EA7206A0611E0A17A8FDBA8EB1FA0&originationContext=documenttoc&transitionType=Default&contextData=(sc.Default)">
+              CCR Title 17, California Code of Regulations
+            </Citation>
+            .
+          </p>
+          <div className="bg-gray-50 rounded-lg border border-gray-200 p-4 space-y-2 text-sm">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Coverage Thresholds — CCR §95812</p>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Mandatory coverage threshold</span>
+              <span className="font-mono font-medium text-gray-900">{COVERAGE_THRESHOLD.toLocaleString()} tCO₂e/yr</span>
+            </div>
+            <div className="flex justify-between border-t border-gray-200 pt-2">
+              <span className="text-gray-600">Voluntary participation threshold</span>
+              <span className="font-mono font-medium text-gray-900">{VOLUNTARY_THRESHOLD.toLocaleString()} tCO₂e/yr</span>
+            </div>
+          </div>
+          <div className="bg-gray-50 rounded-lg border border-gray-200 p-4 space-y-2 text-sm">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Surrender Schedule — CCR §95856</p>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Year 1 surrender</span>
+              <span className="font-mono font-medium text-gray-900">{(YEAR1_SURRENDER_PCT * 100).toFixed(0)}% of compliance obligation</span>
+            </div>
+            <div className="flex justify-between border-t border-gray-200 pt-2">
+              <span className="text-gray-600">Year 2 surrender</span>
+              <span className="font-mono font-medium text-gray-900">{(YEAR2_SURRENDER_PCT * 100).toFixed(0)}% of compliance obligation</span>
+            </div>
+            <div className="flex justify-between border-t border-gray-200 pt-2">
+              <span className="text-gray-600">Year 3 surrender (remainder)</span>
+              <span className="font-mono font-medium text-gray-900">{(YEAR3_SURRENDER_PCT * 100).toFixed(0)}% of compliance obligation</span>
+            </div>
+          </div>
+          <div className="bg-gray-50 rounded-lg border border-gray-200 p-4 space-y-2 text-sm">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Offset Eligibility — CCR §95854</p>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Max offset use (% of compliance obligation)</span>
+              <span className="font-mono font-medium text-gray-900">{(OFFSET_ELIGIBILITY_LIMIT * 100).toFixed(0)}%</span>
+            </div>
+          </div>
+          <div className="bg-gray-50 rounded-lg border border-gray-200 p-4 space-y-2 text-sm">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Market Reference Prices — WCI Auction Data, 2024</p>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Default allowance price</span>
+              <span className="font-mono font-medium text-gray-900">${DEFAULT_ALLOWANCE_PRICE}/tCO₂e</span>
+            </div>
+            <div className="flex justify-between border-t border-gray-200 pt-2">
+              <span className="text-gray-600">Default CARB-eligible offset price</span>
+              <span className="font-mono font-medium text-gray-900">${DEFAULT_OFFSET_PRICE}/tCO₂e</span>
+            </div>
+          </div>
+          <div className="bg-gray-50 rounded-lg border border-gray-200 p-4 space-y-2 text-sm">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Price Trajectory — CARB 2022 Scoping Plan; CCR §95841</p>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Annual cap decline rate</span>
+              <span className="font-mono font-medium text-gray-900">{(ANNUAL_CAP_DECLINE * 100).toFixed(0)}%/yr</span>
+            </div>
+            <div className="flex justify-between border-t border-gray-200 pt-2">
+              <span className="text-gray-600">Annual price floor increase</span>
+              <span className="font-mono font-medium text-gray-900">{(ANNUAL_PRICE_FLOOR_INCREASE * 100).toFixed(0)}%/yr</span>
+            </div>
+          </div>
+          <p>
+            The compliance cost projection uses compound growth on the price floor rate
+            to model likely minimum price escalation over 10 years. The "optimistic"
+            scenario assumes 50% of the net obligation is covered by banked allowances or
+            early auction purchases. The "base" scenario compounds the price floor twice
+            (once for current price, once for future price) and represents the upper range
+            of likely cost under continued price floor escalation. These are not forecasts —
+            actual WCI auction prices depend on cap stringency, economic conditions, and
+            political factors.
+          </p>
+          <p>
+            <span className="font-semibold text-gray-900">Known limitations.</span>{' '}
+            Free allocation percentages are entered by the user and not validated against
+            CARB's sector-specific allocation formulas, which depend on production output,
+            efficiency benchmarks, and assistance factors. The model does not account for
+            early action allowances, auction purchase limits, price containment reserve
+            triggers, or banking/borrowing rules. All results are educational estimates
+            only.
+          </p>
+        </Section>
+
+        {/* Section 12 — Full references */}
+        <Section number="12" title="Full References">
           <ol className="space-y-3 list-none">
             {[
               {
