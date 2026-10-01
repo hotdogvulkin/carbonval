@@ -29,7 +29,7 @@ function buildCoverageMessage(status: CoverageStatus, inputs: CARBInputs): strin
     case 'voluntary_eligible':
       return `Your facility emits ${emis} tCO₂e/year, below the 25,000 tCO₂e mandatory threshold. You may opt into the program voluntarily.`
     case 'not_covered':
-      return `Your facility emits ${emis} tCO₂e/year, below the 10,000 tCO₂e voluntary participation threshold. You are not subject to CARB cap-and-trade.`
+      return `Your facility emits ${emis} tCO₂e/year, below the 10,000 tCO₂e voluntary participation threshold. You are not subject to the CARB Cap-and-Invest program.`
   }
 }
 

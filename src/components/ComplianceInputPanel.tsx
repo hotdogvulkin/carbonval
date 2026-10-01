@@ -233,7 +233,7 @@ export default function ComplianceInputPanel({ inputs, onChange }: Props) {
                 </span>
               </div>
               <p className="text-xs text-gray-400">
-                CARB-eligible offsets are capped at {(DEFAULT_OFFSET_PRICE > 0 ? 4 : 4)}% of your compliance obligation (CCR §95854).
+                CARB-eligible offsets are capped at 6% of your compliance obligation (CCR §95854, as amended by AB 1207 effective Jan 2026).
               </p>
             </div>
 

@@ -33,7 +33,7 @@ export default function Compliance() {
               CarbonVal
             </h1>
             <p className="text-xs text-gray-500 mt-0.5">
-              CARB Compliance Estimator
+              Cap-and-Invest Compliance Estimator
             </p>
           </div>
 
@@ -57,12 +57,13 @@ export default function Compliance() {
       <main className="max-w-6xl mx-auto px-6 py-8">
         <div className="mb-6">
           <h2 className="text-2xl font-bold text-gray-900 tracking-tight">
-            CARB Cap-and-Trade Compliance
+            CARB Cap-and-Invest Compliance
           </h2>
           <p className="text-sm text-gray-500 mt-1 leading-relaxed max-w-2xl">
-            Estimate your California cap-and-trade compliance exposure — coverage status,
+            Estimate your California Cap-and-Invest compliance exposure — coverage status,
             allowance shortfall or surplus, estimated compliance cost, and a 10-year
             projection. Based on CCR Title 17 regulatory parameters and 2024 WCI auction data.
+            Program extended through 2045 and renamed Cap-and-Invest by AB 1207 (Sept 2025).
           </p>
         </div>
 

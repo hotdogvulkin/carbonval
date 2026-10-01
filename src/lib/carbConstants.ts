@@ -16,8 +16,8 @@ export const YEAR1_SURRENDER_PCT = 0.30
 export const YEAR2_SURRENDER_PCT = 0.30
 export const YEAR3_SURRENDER_PCT = 0.40
 
-// CCR Title 17, Section 95854
-export const OFFSET_ELIGIBILITY_LIMIT = 0.04
+// CCR Title 17, Section 95854; raised to 6% effective Jan 1, 2026 (AB 1207, Sept 2025 — program renamed Cap-and-Invest)
+export const OFFSET_ELIGIBILITY_LIMIT = 0.06
 
 // WCI auction data, 2024 reference prices
 export const DEFAULT_ALLOWANCE_PRICE = 30

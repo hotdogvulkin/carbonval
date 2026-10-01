@@ -510,12 +510,16 @@ export default function Methodology() {
         {/* Section 11 — CARB Compliance Module */}
         <Section number="11" title="CARB Compliance Module">
           <p>
-            The CARB compliance module estimates cap-and-trade exposure for California-covered
+            The CARB compliance module estimates compliance exposure for California-covered
             entities under the{' '}
             <Citation href="https://ww2.arb.ca.gov/our-work/programs/cap-and-trade-program">
-              California Cap-and-Trade Program
+              California Cap-and-Invest Program
+            </Citation>{' '}
+            (formerly Cap-and-Trade, renamed and extended through 2045 by{' '}
+            <Citation href="https://leginfo.legislature.ca.gov/faces/billNavClient.xhtml?bill_id=202520260AB1207">
+              AB 1207
             </Citation>
-            . All constants are derived from{' '}
+            , signed September 2025). All constants are derived from{' '}
             <Citation href="https://govt.westlaw.com/calregs/Browse/Home/California/CaliforniaCodeofRegulations?guid=I5D9EA7206A0611E0A17A8FDBA8EB1FA0&originationContext=documenttoc&transitionType=Default&contextData=(sc.Default)">
               CCR Title 17, California Code of Regulations
             </Citation>
@@ -548,10 +552,14 @@ export default function Methodology() {
             </div>
           </div>
           <div className="bg-gray-50 rounded-lg border border-gray-200 p-4 space-y-2 text-sm">
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Offset Eligibility — CCR §95854</p>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Offset Eligibility — CCR §95854 (as amended by AB 1207)</p>
             <div className="flex justify-between">
-              <span className="text-gray-600">Max offset use (% of compliance obligation)</span>
+              <span className="text-gray-600">Max offset use (% of compliance obligation, effective Jan 1, 2026)</span>
               <span className="font-mono font-medium text-gray-900">{(OFFSET_ELIGIBILITY_LIMIT * 100).toFixed(0)}%</span>
+            </div>
+            <div className="flex justify-between border-t border-gray-200 pt-2">
+              <span className="text-gray-600">Of which must have direct environmental benefit in California</span>
+              <span className="font-mono font-medium text-gray-900">50%</span>
             </div>
           </div>
           <div className="bg-gray-50 rounded-lg border border-gray-200 p-4 space-y-2 text-sm">
@@ -592,8 +600,9 @@ export default function Methodology() {
             CARB's sector-specific allocation formulas, which depend on production output,
             efficiency benchmarks, and assistance factors. The model does not account for
             early action allowances, auction purchase limits, price containment reserve
-            triggers, or banking/borrowing rules. All results are educational estimates
-            only.
+            triggers, banking/borrowing rules, or the AB 1207 requirement that 50% of
+            offsets used carry direct environmental benefits in California. All results are
+            educational estimates only.
           </p>
         </Section>
 
