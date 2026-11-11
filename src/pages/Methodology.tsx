@@ -1,4 +1,9 @@
-import { SEQUESTRATION_RATES, PERMANENCE_FACTORS, ADDITIONALITY_LEVELS, VERIFICATION_COST, PRICE_PER_TON, CO_BENEFITS } from '../lib/constants'
+import {
+  SEQUESTRATION_RATES, ADDITIONALITY_LEVELS, VERIFICATION_COST, PRICE_PER_TON, CO_BENEFITS,
+  COMET_PRACTICES, COMET_PRACTICE_ORDER, COMET_CITATION, CARB_UNMODELED_RISKS,
+  INTEGRITY_POINTS, INTEGRITY_THRESHOLDS, SENSITIVITY_SAMPLE_REGIONS,
+} from '../lib/constants'
+import { carbUnmodeledBuffer, formatPercent } from '../lib/carbonModel'
 import {
   COVERAGE_THRESHOLD,
   VOLUNTARY_THRESHOLD,
@@ -11,6 +16,15 @@ import {
   ANNUAL_CAP_DECLINE,
   ANNUAL_PRICE_FLOOR_INCREASE,
 } from '../lib/carbConstants'
+
+const CARB_CATEGORY_LABELS: Record<string, string> = {
+  financialFailure: 'Financial failure (Table D.2)',
+  illegalRemoval: 'Illegal forest biomass removal (Table D.3)',
+  conversion: 'Conversion to alternative land use (Table D.4)',
+  overHarvesting: 'Over-harvesting (Table D.5)',
+  social: 'Social risk (Table D.6)',
+  otherCatastrophic: 'Other episodic catastrophic events (Table D.9)',
+}
 
 interface CitationProps {
   children: React.ReactNode
@@ -99,8 +113,9 @@ export default function Methodology() {
           </h1>
           <p className="text-gray-500 text-sm leading-relaxed">
             This page documents every coefficient, adjustment factor, and data source
-            used in CarbonVal's carbon credit valuation model. All values are drawn
-            from peer-reviewed IPCC guidelines or U.S. government sources.
+            used in CarbonVal's carbon credit valuation model. Values are drawn from
+            IPCC guidelines, peer-reviewed research, USDA COMET-Planner, the CARB U.S. Forest
+            Projects Protocol, and U.S. government sources.
             This tool produces educational estimates only — actual carbon project
             values require third-party verification by an accredited registry
             (Verra, Gold Standard, or ACR).
@@ -110,44 +125,44 @@ export default function Methodology() {
         {/* Section 1 — Calculation chain */}
         <Section number="1" title="Calculation Chain">
           <p>
-            CarbonVal follows a six-step calculation chain. All logic lives in{' '}
+            All calculation logic lives in{' '}
             <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs font-mono text-gray-800">
               src/lib/carbonModel.ts
             </code>{' '}
-            as pure functions with no side effects.
+            as pure functions with no side effects. Location-dependent inputs (ecoregion risk,
+            county, COMET-Planner row) are resolved from the dropped pin before the calculation runs.
           </p>
           <div className="bg-gray-900 rounded-xl p-5 font-mono text-xs text-green-300 space-y-1 overflow-x-auto">
-            <p><span className="text-gray-500">// Step 1 — Unit conversion</span></p>
-            <p>hectares = acres {'\u00D7'} 0.4047</p>
-            <p className="pt-1"><span className="text-gray-500">// Step 2 — Gross sequestration</span></p>
-            <p>annualSequestration = hectares {'\u00D7'} SEQUESTRATION_RATE[landType]</p>
-            <p className="pt-1"><span className="text-gray-500">// Step 3 — Apply permanence and additionality</span></p>
-            <p>adjustedAnnual = annualSequestration {'\u00D7'} permanence {'\u00D7'} additionality</p>
-            <p className="pt-1"><span className="text-gray-500">// Step 4 — Total credits over project lifetime</span></p>
-            <p>totalCredits = adjustedAnnual {'\u00D7'} projectYears</p>
-            <p className="pt-1"><span className="text-gray-500">// Step 5 — Apply price and co-benefit premium</span></p>
-            <p>grossValue = totalCredits {'\u00D7'} pricePerTon {'\u00D7'} coBenefit[landType]</p>
-            <p className="pt-1"><span className="text-gray-500">// Step 6 — Deduct verification cost</span></p>
-            <p>netValue = grossValue {'\u00D7'} (1 {'\u2212'} verificationCost)</p>
+            <p><span className="text-gray-500">// Step 1 — Gross annual sequestration</span></p>
+            <p>forest / other: gross = acres {'×'} 0.4047 {'×'} SEQUESTRATION_RATE[landType]</p>
+            <p>cropland:       gross = acres {'×'} COMET[county, practice, irrigation]  (0 if no practice)</p>
+            <p className="pt-1"><span className="text-gray-500">// Step 2 — Reversal risk (forest only)</span></p>
+            <p>permanence = perm30[ecoregion, P25 or median] {'×'} (1 {'−'} CARB unmodeled buffer)</p>
+            <p className="pt-1"><span className="text-gray-500">// Step 3 — Additionality</span></p>
+            <p>adjustedAnnual = gross {'×'} permanence {'×'} additionality</p>
+            <p className="pt-1"><span className="text-gray-500">// Step 4 — Total credits, price, verification cost</span></p>
+            <p>totalCredits = adjustedAnnual {'×'} projectYears</p>
+            <p>netValue = totalCredits {'×'} pricePerTon {'×'} coBenefit[landType] {'×'} (1 {'−'} verificationCost)</p>
           </div>
+          <p>
+            Estimates are for screening and decision support only — not for registering or
+            selling credits.
+          </p>
         </Section>
 
         {/* Section 2 — Sequestration rates */}
-        <Section number="2" title="Sequestration Rates">
+        <Section number="2" title="Sequestration Rates (Forest and Other Land)">
           <p>
-            Sequestration rates represent Tier 1 default values from the{' '}
+            Forest, shrubland, grassland, wetland and other rates are Tier 1 default values from the{' '}
             <Citation href="https://www.ipcc-nggip.iges.or.jp/public/2006gl/vol4.html">
               IPCC 2006 Guidelines for National Greenhouse Gas Inventories, Volume 4
             </Citation>
-            , selected for temperate North American conditions. Forest rates are
-            derived from Chapter 4 (Table 4.9, mean annual increment for temperate
-            continental zones). Grassland and cropland rates are derived from
-            Chapters 6 and 5 respectively, using Tier 1 soil carbon stock change
-            factors. Wetland rates reflect Chapter 7 guidance for managed inland
-            wetlands. These are point estimates from ranges that vary by climate
-            zone, species composition, soil type, and stand age. Users requiring
-            project-level precision should use country- or region-specific Tier 2
-            data.
+            , selected for temperate North American conditions. These are point estimates from
+            ranges that vary by climate zone, species composition, soil type, and stand age.{' '}
+            <span className="font-semibold text-gray-900">
+              Forest growth rates are still IPCC Tier 1 defaults and are coarse at the parcel scale.
+            </span>{' '}
+            Cropland no longer uses an IPCC rate; see Section 3.
           </p>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -165,49 +180,185 @@ export default function Methodology() {
                 <TableRow landType="Mixed Forest" rate={SEQUESTRATION_RATES.mixedForest} zone="Temperate continental" source="Vol. 4, Ch. 4, Table 4.9" />
                 <TableRow landType="Shrubland" rate={SEQUESTRATION_RATES.shrubland} zone="Temperate" source="Vol. 4, Ch. 6, Sec. 6.2" />
                 <TableRow landType="Grassland" rate={SEQUESTRATION_RATES.grassland} zone="Temperate, nominally managed" source="Vol. 4, Ch. 6, Table 6.2" />
-                <TableRow landType="Cropland" rate={SEQUESTRATION_RATES.cropland} zone="Temperate, full-till baseline" source="Vol. 4, Ch. 5, Table 5.5" />
                 <TableRow landType="Wetland" rate={SEQUESTRATION_RATES.wetland} zone="Temperate inland" source="Vol. 4, Ch. 7, Sec. 7.2" />
                 <TableRow landType="Other" rate={SEQUESTRATION_RATES.other} zone="Conservative default" source="Vol. 4, Ch. 9" />
               </tbody>
             </table>
           </div>
           <p className="text-xs text-gray-400 mt-2">
-            All rates expressed in metric tonnes of CO₂ equivalent per hectare per year (tCO₂/ha/yr).
-            1 acre = 0.4047 hectares (exact conversion factor).
+            1 acre = 0.4047 hectares.
           </p>
         </Section>
 
-        {/* Section 3 — Permanence */}
-        <Section number="3" title="Permanence Discount">
+        {/* Section 3 — Cropland */}
+        <Section number="3" title="Cropland: COMET-Planner">
           <p>
-            Carbon credits require that sequestered carbon remain stored for the
-            duration of the project period and beyond. Parcels without legal
-            protection (conservation easement, fee-simple acquisition, or equivalent
-            instrument) face a higher risk of reversal through development,
-            harvest, or fire. CarbonVal applies a permanence factor to reflect this
-            risk:
+            Cropland estimates come from the USDA-NRCS / Colorado State University{' '}
+            <Citation href="https://comet-planner.com">COMET-Planner</Citation> dataset
+            (Version 4.0, Build 2), column <code className="text-xs font-mono">total_ghg_co2</code>:
+            the mean total greenhouse-gas emission reduction of adopting a conservation practice, in
+            metric tonnes CO₂e per acre per year. It includes soil carbon, biomass carbon, N₂O and
+            on-farm fossil-fuel changes, so not every practice is purely a soil-carbon stock change.
           </p>
-          <div className="bg-gray-50 rounded-lg border border-gray-200 p-4 font-mono text-sm space-y-1">
-            <p><span className="text-gray-400">Protected parcel:</span> <span className="text-green-900 font-medium">{PERMANENCE_FACTORS.protected.toFixed(2)} (no discount)</span></p>
-            <p><span className="text-gray-400">Unprotected parcel:</span> <span className="text-green-900 font-medium">{PERMANENCE_FACTORS.unprotected.toFixed(2)} (18% discount)</span></p>
+          <p>
+            <span className="font-semibold text-gray-900">Stock-change logic.</span>{' '}
+            Credits come only from a change in management. If no practice is selected, there is no
+            management change, no stock change, and therefore zero additional carbon — there is no
+            generic cropland sequestration rate. Without a map pin the county is unknown, so the
+            tool asks for a pin instead of guessing.
+          </p>
+          <p>
+            <span className="font-semibold text-gray-900">Practices and variants.</span>{' '}
+            COMET-Planner models several implementation variants per practice. CarbonVal does not
+            average them; it uses one exact variant per practice, chosen by the irrigation toggle
+            (default non-irrigated):
+          </p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left">
+                  <th className="pb-2 pr-4 text-xs font-semibold text-gray-400 uppercase tracking-wide">CPS</th>
+                  <th className="pb-2 pr-4 text-xs font-semibold text-gray-400 uppercase tracking-wide">Practice</th>
+                  <th className="pb-2 text-xs font-semibold text-gray-400 uppercase tracking-wide">COMET-Planner implementation ({'{'}irrigation{'}'} = Irrigated / Non-Irrigated)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {COMET_PRACTICE_ORDER.map(num => (
+                  <tr key={num} className="border-t border-gray-100">
+                    <td className="py-2 pr-4 font-mono text-xs text-green-900">{num}</td>
+                    <td className="py-2 pr-4 font-medium text-gray-900">{COMET_PRACTICES[num].label}</td>
+                    <td className="py-2 text-gray-500 text-xs">{COMET_PRACTICES[num].implementation}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
           <p>
-            The 18% discount for unprotected land is consistent with buffer pool
-            requirements used by the{' '}
-            <Citation href="https://verra.org/programs/verified-carbon-standard/">
-              Verified Carbon Standard (Verra)
+            <span className="font-semibold text-gray-900">Geography.</span>{' '}
+            The pin is matched to a county with the FCC Area API. COMET-Planner reports values for
+            USDA Major Land Resource Areas rectified to county boundaries, and each county carries one
+            value. Counties and MLRAs do not coincide exactly, so a county value may not represent every
+            part of a county that spans several MLRAs. Where an MLRA had too few samples, COMET-Planner
+            substitutes the Land Resource Region value. Values marked −999 (“not estimated”) are shown
+            as data unavailable.
+          </p>
+          <p className="text-xs text-gray-500">Citation (as requested by COMET-Planner): {COMET_CITATION}</p>
+        </Section>
+
+        {/* Section 4 — Reversal risk */}
+        <Section number="4" title="Reversal Risk (Forest)">
+          <p>
+            Forest permanence uses fire, drought and insect risk maps from{' '}
+            <Citation href="https://doi.org/10.1111/ele.14018">Anderegg et al. (2022)</Citation>,
+            published by <Citation href="https://carbonplan.org/research/forest-risks">CarbonPlan</Citation>{' '}
+            at 4 km resolution. For every EPA Level III ecoregion, CarbonVal uses the forested grid
+            cells (cells where the published layers have data) and the SSP2-4.5 scenario averaged over
+            the 2020s through 2050s:
+          </p>
+          <div className="bg-gray-900 rounded-xl p-5 font-mono text-xs text-green-300 space-y-1 overflow-x-auto">
+            <p>fire            = projected annual fire probability  <span className="text-gray-500">// never baseline-subtracted</span></p>
+            <p>drought_excess  = max(0, projected {'−'} 1980s)</p>
+            <p>insects_excess  = max(0, projected {'−'} 1980s)</p>
+            <p>combined_annual = 1 {'−'} (1 {'−'} fire)(1 {'−'} max(drought_excess, insects_excess))</p>
+            <p>perm30          = (1 {'−'} combined_annual)^30</p>
+          </div>
+          <p>
+            Drought and insect layers model total mortality, while IPCC Tier 1 net growth rates are
+            already net of normal background mortality. Subtracting the 1980s level for drought and
+            insects (only) avoids counting background mortality twice. Fire at historical rates is real
+            reversal risk, so fire is used in full. Drought and insect mortality overlap (insects often
+            attack drought-stressed trees), so the two are combined with max() rather than as independent
+            risks; Section 14 shows the independence case.
+          </p>
+          <p>
+            <span className="font-semibold text-gray-900">Unmodeled risks (CARB buffer).</span>{' '}
+            The dataset omits wind, ice, harvest, financial and other reversals. For these, CarbonVal uses
+            the{' '}
+            <Citation href="https://ww2.arb.ca.gov/sites/default/files/cap-and-trade/protocols/usforest/forestprotocol2015.pdf">
+              CARB Compliance Offset Protocol, U.S. Forest Projects (adopted June 25, 2015), Appendix D, Table D.10
+            </Citation>
+            . CARB's Wildfire and Disease/Insect categories are replaced by the regional data; the remaining
+            categories are combined multiplicatively, as in CARB's own formula:
+            buffer = 1 {'−'} {'∏'}(1 {'−'} risk).
+          </p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left">
+                  <th className="pb-2 pr-4 text-xs font-semibold text-gray-400 uppercase tracking-wide">CARB category</th>
+                  <th className="pb-2 pr-4 text-xs font-semibold text-gray-400 uppercase tracking-wide">Unprotected (no QCE)</th>
+                  <th className="pb-2 text-xs font-semibold text-gray-400 uppercase tracking-wide">Protected (QCE / public / tribal)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Object.keys(CARB_UNMODELED_RISKS.unprotected).map(k => (
+                  <tr key={k} className="border-t border-gray-100">
+                    <td className="py-2 pr-4 text-gray-700">{CARB_CATEGORY_LABELS[k] ?? k}</td>
+                    <td className="py-2 pr-4 font-mono text-green-900">{formatPercent(CARB_UNMODELED_RISKS.unprotected[k], 0)}</td>
+                    <td className="py-2 font-mono text-green-900">{formatPercent(CARB_UNMODELED_RISKS.protected[k], 0)}</td>
+                  </tr>
+                ))}
+                <tr className="border-t border-gray-100 text-gray-400">
+                  <td className="py-2 pr-4">Wildfire, Disease/Insects</td>
+                  <td className="py-2 pr-4" colSpan={2}>Replaced by Anderegg et al. regional data</td>
+                </tr>
+                <tr className="border-t border-gray-200 font-semibold">
+                  <td className="py-2 pr-4 text-gray-900">Unmodeled buffer</td>
+                  <td className="py-2 pr-4 font-mono text-green-900">{formatPercent(carbUnmodeledBuffer('unprotected'), 2)}</td>
+                  <td className="py-2 font-mono text-green-900">{formatPercent(carbUnmodeledBuffer('protected'), 2)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div className="bg-gray-50 rounded-lg border border-gray-200 p-4 font-mono text-sm">
+            permanence = perm30_regional {'×'} (1 {'−'} unmodeled buffer)
+          </div>
+          <p>
+            <span className="font-semibold text-gray-900">Enrollment risk toggle.</span>{' '}
+            Parcels at higher risk may be more likely to enroll (adverse selection). With the toggle ON
+            (default) CarbonVal uses the 25th percentile of perm30 across the ecoregion's forested cells,
+            i.e. the 75th percentile of risk; with it OFF it uses the median. Locations outside forest-risk
+            coverage show “No regional risk data for this location” instead of a flat discount.
+          </p>
+          <p>
+            <span className="font-semibold text-gray-900">Context from other registries.</span>{' '}
+            Verra's{' '}
+            <Citation href="https://verra.org/wp-content/uploads/2023/10/AFOLU-Non-Permanence-Risk-Tool-v4.2-FINAL.pdf">
+              AFOLU Non-Permanence Risk Tool v4.2
             </Citation>{' '}
-            and the{' '}
-            <Citation href="https://americancarbonregistry.org">
-              American Carbon Registry (ACR)
+            sets a minimum risk rating of 12 regardless of the calculated score. The{' '}
+            <Citation href="https://acrcarbon.org/wp-content/uploads/2016/01/ACR-Risk-Tool-v2.0-2024-11-19.pdf">
+              ACR Reversal Risk Tool v2.0
             </Citation>{' '}
-            for unprotected forestry projects in North America, which typically
-            require 10–20% of credits be held in a buffer pool against reversal risk.
+            also combines risk categories multiplicatively. CarbonVal follows CARB's structure and does not
+            apply a separate floor.
+          </p>
+          <p>
+            Reversal risk is modeled for forest land types only. For cropland and other land types
+            no reversal discount is applied, and the results panel says so.
           </p>
         </Section>
 
-        {/* Section 4 — Additionality */}
-        <Section number="4" title="Additionality Factor">
+        {/* Section 5 — Integrity badge */}
+        <Section number="5" title="Integrity-Risk Badge">
+          <p>
+            The Low / Medium / High badge next to the result is a CarbonVal screening heuristic. It is not
+            a rating from any ratings agency and does not follow any agency's method. It adds points for
+            factors that make an estimate less likely to hold up:
+          </p>
+          <div className="bg-gray-50 rounded-lg border border-gray-200 p-4 space-y-1 text-sm">
+            <p>Additionality level: conservative +{INTEGRITY_POINTS.additionality.conservative}, moderate +{INTEGRITY_POINTS.additionality.moderate}, high +{INTEGRITY_POINTS.additionality.high} (claiming more credit with less evidence)</p>
+            <p>Protection status: protected +{INTEGRITY_POINTS.protection.protected}, unprotected +{INTEGRITY_POINTS.protection.unprotected}</p>
+            <p>Regional risk percentile (ecoregion median vs. all CONUS forest cells): below 50th +{INTEGRITY_POINTS.regionalRisk.below50}, 50th–74th +{INTEGRITY_POINTS.regionalRisk.from50}, 75th and above +{INTEGRITY_POINTS.regionalRisk.from75}, not available (non-forest or no data) +{INTEGRITY_POINTS.regionalRisk.unknown}</p>
+            <p>Land cover overridden (chosen type differs from the satellite-detected type): +{INTEGRITY_POINTS.landCoverOverride}</p>
+            <p className="pt-2 border-t border-gray-200 font-medium">
+              {INTEGRITY_THRESHOLDS.map(t => `${t.level[0].toUpperCase()}${t.level.slice(1)}: score ≥ ${t.minScore}`).join(' · ')}
+            </p>
+          </div>
+        </Section>
+
+        {/* Section 6 — Additionality */}
+        <Section number="6" title="Additionality Factor">
           <p>
             Additionality is the principle that carbon credits should only represent
             sequestration that would not have occurred without the carbon project —
@@ -260,8 +411,8 @@ export default function Methodology() {
           </p>
         </Section>
 
-        {/* Section 5 — Price scenarios */}
-        <Section number="5" title="Market Price Scenarios">
+        {/* Section 7 — Price scenarios */}
+        <Section number="7" title="Market Price Scenarios">
           <p>
             CarbonVal offers three price scenarios corresponding to distinct segments
             of the voluntary carbon market (VCM). Prices are fixed point-in-time
@@ -297,8 +448,8 @@ export default function Methodology() {
           </p>
         </Section>
 
-        {/* Section 6 — Co-benefits */}
-        <Section number="6" title="Co-Benefit Price Multipliers">
+        {/* Section 8 — Co-benefits */}
+        <Section number="8" title="Co-Benefit Price Multipliers">
           <p>
             Different land types generate different levels of biodiversity,
             water quality, and community co-benefits alongside carbon sequestration.
@@ -350,8 +501,8 @@ export default function Methodology() {
           </p>
         </Section>
 
-        {/* Section 7 — Verification cost */}
-        <Section number="7" title="Verification and Registry Cost">
+        {/* Section 9 — Verification cost */}
+        <Section number="9" title="Verification and Registry Cost">
           <p>
             Carbon credits must be verified by an accredited third-party auditor
             and registered on a recognized registry before they can be sold.
@@ -376,8 +527,8 @@ export default function Methodology() {
           </p>
         </Section>
 
-        {/* Section 8 — Car equivalent */}
-        <Section number="8" title="Car Equivalent Statistic">
+        {/* Section 10 — Car equivalent */}
+        <Section number="10" title="Car Equivalent Statistic">
           <p>
             The car equivalent statistic converts total carbon credits into an
             intuitive real-world comparison:
@@ -397,8 +548,8 @@ export default function Methodology() {
           </p>
         </Section>
 
-        {/* Section 9 — Satellite Land Cover Detection */}
-        <Section number="9" title="Satellite Land Cover Detection">
+        {/* Section 11 — Satellite Land Cover Detection */}
+        <Section number="11" title="Satellite Land Cover Detection">
           <p>
             CarbonVal V2 uses the USGS National Land Cover Database (NLCD) 2021 to
             automatically classify land cover type at any US coordinate. NLCD 2021
@@ -461,54 +612,100 @@ export default function Methodology() {
           </p>
         </Section>
 
-        {/* Section 10 — Known Limitations */}
-        <Section number="10" title="Known Limitations">
+        {/* Section 12 — Changes based on expert review */}
+        <Section number="12" title="Changes Based on Expert Review">
+          <p>Version 5 of the methodology was revised after outside expert review. The main changes:</p>
+          <ul className="list-disc pl-5 space-y-2">
+            <li><span className="font-semibold text-gray-900">Flat 18% permanence discount removed.</span> It had no regional basis. Forest permanence now comes from ecoregion-level fire, drought and insect risk plus CARB's buffer for risks the data does not cover.</li>
+            <li><span className="font-semibold text-gray-900">Background mortality no longer double-counted.</span> IPCC growth rates are already net of normal mortality, so drought and insect risk use only the excess above the 1980s; fire is kept in full because historical fire is real reversal risk.</li>
+            <li><span className="font-semibold text-gray-900">Drought and insects combined with max().</span> The two overlap, so treating them as independent would overstate risk.</li>
+            <li><span className="font-semibold text-gray-900">CARB structure instead of an ad-hoc floor.</span> The unmodeled buffer uses CARB's adopted 2015 protocol values (not the 2014 proposed-rulemaking values, which differed for social risk).</li>
+            <li><span className="font-semibold text-gray-900">Enrollment-risk (adverse selection) toggle added,</span> defaulting to the more conservative 75th percentile of risk.</li>
+            <li><span className="font-semibold text-gray-900">Generic cropland rate removed.</span> The IPCC 0.3 fallback credited carbon without any management change. Cropland now requires a specific practice and uses COMET-Planner county values for the exact practice and irrigation variant, without averaging variants.</li>
+            <li><span className="font-semibold text-gray-900">Integrity-risk badge and screening caveats added</span> so results are not read as registry-ready credit estimates.</li>
+          </ul>
+        </Section>
+
+        {/* Section 13 — Known Limitations */}
+        <Section number="13" title="Known Limitations">
           <p>
-            <span className="font-semibold text-gray-900">Rate generalization.</span>{' '}
-            Sequestration rates are IPCC Tier 1 global defaults. Actual rates for a
-            specific parcel in New England, the Southeast, or the Pacific Northwest
-            may differ materially based on species composition, stand age, soil type,
-            and local climate. Users with site-specific data should treat CarbonVal
-            outputs as order-of-magnitude estimates only.
+            <span className="font-semibold text-gray-900">Forest growth rates are still Tier 1.</span>{' '}
+            Forest sequestration uses IPCC Tier 1 defaults, which are coarse at the parcel scale and do
+            not reflect species, stand age, site index or management.
+          </p>
+          <p>
+            <span className="font-semibold text-gray-900">1980s baseline.</span>{' '}
+            Treating the 1980s drought and insect level as background mortality may also remove some real
+            episodic risk that occurred in that decade.
+          </p>
+          <p>
+            <span className="font-semibold text-gray-900">Full exposure assumption.</span>{' '}
+            (1 {'−'} p)^30 assumes all stored carbon is exposed to risk for the full 30 years. Credits
+            issued late in a project are exposed for less time, so this is conservative for them; it also
+            ignores partial (non-stand-replacing) losses and recovery.
+          </p>
+          <p>
+            <span className="font-semibold text-gray-900">Omitted hazards.</span>{' '}
+            The Anderegg et al. dataset omits wind, ice and harvest. The CARB unmodeled buffer
+            approximates these, but it is a protocol default, not a regional estimate.
+          </p>
+          <p>
+            <span className="font-semibold text-gray-900">Ecoregion-level risk.</span>{' '}
+            Each parcel receives its ecoregion's distribution, not the risk of its own 4 km cell.
+            Ecoregion polygons are simplified (~4 km), so pins near a boundary may be assigned to the
+            neighboring ecoregion.
+          </p>
+          <p>
+            <span className="font-semibold text-gray-900">Cropland.</span>{' '}
+            County values stand in for MLRA values; soil-carbon reversal (e.g. returning to tillage) is not modeled.
           </p>
           <p>
             <span className="font-semibold text-gray-900">Simplified additionality.</span>{' '}
-            CarbonVal's three additionality levels (0.60 / 0.75 / 0.90) are coarse
-            proxies. Real carbon projects require project-specific additionality
-            demonstration, often involving counterfactual land use analysis, threat
-            mapping, and legal review. This is the single largest source of
-            uncertainty in the model.
+            The three additionality levels (0.60 / 0.75 / 0.90) are coarse proxies and remain the single
+            largest source of uncertainty in the model.
           </p>
           <p>
-            <span className="font-semibold text-gray-900">Static pricing.</span>{' '}
-            Price scenarios are fixed point-in-time estimates based on 2023–2024 VCM
-            data. Carbon markets are volatile — prices have ranged from under $1 to
-            over $50 per tonne in the voluntary market over the past decade. V3 will
-            address this with a monthly-updated price feed.
-          </p>
-          <p>
-            <span className="font-semibold text-gray-900">Single-pixel land classification.</span>{' '}
-            NLCD classification is based on a single 30m pixel at the pin location.
-            Large or heterogeneous parcels may contain multiple land cover types that
-            this tool does not capture. A full project would require parcel boundary
-            integration and area-weighted classification.
-          </p>
-          <p>
-            <span className="font-semibold text-gray-900">US coverage only.</span>{' '}
-            NLCD is a US-specific dataset. The tool does not support international
-            parcels.
-          </p>
-          <p>
-            <span className="font-semibold text-gray-900">No permanence modeling.</span>{' '}
-            CarbonVal does not model specific reversal risks such as wildfire
-            probability, pest outbreak, or development pressure. The permanence
-            factor is a blunt instrument. Actual registry buffer pool requirements
-            vary by methodology, geography, and project risk profile.
+            <span className="font-semibold text-gray-900">Static pricing and single-pixel land cover.</span>{' '}
+            Prices are fixed 2023–2024 reference points, and NLCD land cover is read from one 30 m pixel.
+            Coverage is the contiguous United States only.
           </p>
         </Section>
 
-        {/* Section 11 — CARB Compliance Module */}
-        <Section number="11" title="CARB Compliance Module">
+        {/* Section 14 — Sensitivity */}
+        <Section number="14" title="Sensitivity: Combining Method">
+          <p>
+            Median 30-year regional permanence (perm30, before the CARB buffer) using max() combining
+            versus treating fire, drought and insects as fully independent risks:
+            1 {'−'} (1 {'−'} fire)(1 {'−'} drought_excess)(1 {'−'} insects_excess).
+          </p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left">
+                  <th className="pb-2 pr-4 text-xs font-semibold text-gray-400 uppercase tracking-wide">Region (EPA L3)</th>
+                  <th className="pb-2 pr-4 text-xs font-semibold text-gray-400 uppercase tracking-wide">max() (used)</th>
+                  <th className="pb-2 text-xs font-semibold text-gray-400 uppercase tracking-wide">Full independence</th>
+                </tr>
+              </thead>
+              <tbody>
+                {SENSITIVITY_SAMPLE_REGIONS.map(r => (
+                  <tr key={r.name} className="border-t border-gray-100">
+                    <td className="py-2 pr-4 text-gray-900">{r.name} ({r.codes.join(' + ')})</td>
+                    <td className="py-2 pr-4 font-mono text-green-900">{formatPercent(r.maxCombining)}</td>
+                    <td className="py-2 font-mono text-green-900">{formatPercent(r.independent)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p>
+            The difference matters only where both drought and insect mortality rise above their 1980s
+            levels (here, the Sierra Nevada).
+          </p>
+        </Section>
+
+        {/* Section 15 — CARB Compliance Module */}
+        <Section number="15" title="CARB Compliance Module">
           <p>
             The CARB compliance module estimates compliance exposure for California-covered
             entities under the{' '}
@@ -606,8 +803,33 @@ export default function Methodology() {
           </p>
         </Section>
 
-        {/* Section 12 — Full references */}
-        <Section number="12" title="Full References">
+        {/* Section 16 — Data credits */}
+        <Section number="16" title="Data Credits">
+          <ul className="list-disc pl-5 space-y-2">
+            <li>
+              Forest reversal-risk data: Anderegg, W.R.L., Chegwidden, O.S., Badgley, G., Trugman, A.T.,
+              Cullenward, D., Abatzoglou, J.T., Hicke, J.A., Freeman, J., Hamman, J.J. (2022). Future
+              climate risks from stress, insects and fire across US forests. <em>Ecology Letters</em> 25(6), 1510–1520.{' '}
+              <Citation href="https://doi.org/10.1111/ele.14018">doi:10.1111/ele.14018</Citation>. Data
+              published by <Citation href="https://github.com/carbonplan/forest-risks">CarbonPlan</Citation>{' '}
+              under CC-BY-4.0; CarbonVal derived per-ecoregion statistics from it.
+            </li>
+            <li>Cropland: {COMET_CITATION}</li>
+            <li>
+              CARB. Compliance Offset Protocol, U.S. Forest Projects. Adopted June 25, 2015.{' '}
+              <Citation href="https://ww2.arb.ca.gov/sites/default/files/cap-and-trade/protocols/usforest/forestprotocol2015.pdf">PDF</Citation>.
+            </li>
+            <li>
+              U.S. EPA. Level III Ecoregions of the Continental United States.{' '}
+              <Citation href="https://www.epa.gov/eco-research/level-iii-and-iv-ecoregions-continental-united-states">epa.gov</Citation>.
+            </li>
+            <li>County lookup: FCC Area API (Census block / county FIPS).</li>
+          </ul>
+          <p className="text-xs text-gray-500">Full provenance, versions and download dates are recorded in data/SOURCES.md in the repository.</p>
+        </Section>
+
+        {/* Section 17 — Full references */}
+        <Section number="17" title="Full References">
           <ol className="space-y-3 list-none">
             {[
               {
@@ -649,6 +871,36 @@ export default function Methodology() {
                 id: 8,
                 text: 'Multi-Resolution Land Characteristics Consortium (MRLC). National Land Cover Database 2021. U.S. Geological Survey, 2023.',
                 href: 'https://www.mrlc.gov',
+              },
+              {
+                id: 9,
+                text: 'Anderegg, W.R.L., Chegwidden, O.S., Badgley, G., Trugman, A.T., Cullenward, D., Abatzoglou, J.T., Hicke, J.A., Freeman, J., Hamman, J.J. Future climate risks from stress, insects and fire across US forests. Ecology Letters, 25(6), 1510–1520, 2022.',
+                href: 'https://doi.org/10.1111/ele.14018',
+              },
+              {
+                id: 10,
+                text: COMET_CITATION,
+                href: 'https://comet-planner.com',
+              },
+              {
+                id: 11,
+                text: 'California Air Resources Board. Compliance Offset Protocol, U.S. Forest Projects. Adopted June 25, 2015.',
+                href: 'https://ww2.arb.ca.gov/sites/default/files/cap-and-trade/protocols/usforest/forestprotocol2015.pdf',
+              },
+              {
+                id: 12,
+                text: 'Verra. AFOLU Non-Permanence Risk Tool, v4.2. 2023.',
+                href: 'https://verra.org/wp-content/uploads/2023/10/AFOLU-Non-Permanence-Risk-Tool-v4.2-FINAL.pdf',
+              },
+              {
+                id: 13,
+                text: 'ACR. Reversal Risk Tool, v2.0. November 2024.',
+                href: 'https://acrcarbon.org/wp-content/uploads/2016/01/ACR-Risk-Tool-v2.0-2024-11-19.pdf',
+              },
+              {
+                id: 14,
+                text: 'U.S. EPA. Level III Ecoregions of the Continental United States.',
+                href: 'https://www.epa.gov/eco-research/level-iii-and-iv-ecoregions-continental-united-states',
               },
             ].map(ref => (
               <li key={ref.id} className="flex gap-3">
