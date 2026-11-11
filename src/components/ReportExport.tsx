@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
-import type { ValuationInputs, ValuationOutputs, ScenarioComparison, ScenarioComparisonRow } from '../types'
-import { formatCurrency, formatNumber } from '../lib/carbonModel'
-import { LAND_TYPE_LABELS, ADDITIONALITY_LEVEL_LABELS, PRICE_SCENARIO_LABELS } from '../lib/constants'
+import type { ValuationInputs, ValuationOutputs, ScenarioComparison, ScenarioComparisonRow, RegionalRisk } from '../types'
+import { formatCurrency, formatNumber, formatPercent, isForest } from '../lib/carbonModel'
+import { LAND_TYPE_LABELS, ADDITIONALITY_LEVEL_LABELS, PRICE_SCENARIO_LABELS, COMET_PRACTICES } from '../lib/constants'
 
 interface PdfTableRow {
   label: string
@@ -20,13 +20,14 @@ interface Props {
   inputs: ValuationInputs
   results: ValuationOutputs
   scenarioComparison: ScenarioComparison
+  region?: RegionalRisk | null
 }
 
 type ExportState = 'idle' | 'generating' | 'done' | 'error'
 
 const SCENARIOS = ['conservative', 'mid', 'premium'] as const
 
-export default function ReportExport({ inputs, results, scenarioComparison }: Props) {
+export default function ReportExport({ inputs, results, scenarioComparison, region }: Props) {
   const contentRef = useRef<HTMLDivElement>(null)
   const [exportState, setExportState] = useState<ExportState>('idle')
 
@@ -69,6 +70,19 @@ export default function ReportExport({ inputs, results, scenarioComparison }: Pr
 
   const durationLabel = `${inputs.duration} years`
   const protectionLabel = inputs.protectionStatus === 'protected' ? 'Protected' : 'Unprotected'
+  const available = results.status === 'ok' || results.status === 'no-practice'
+  const practiceLabel = inputs.cpsNumber !== undefined
+    ? `CPS ${inputs.cpsNumber} — ${COMET_PRACTICES[inputs.cpsNumber].label} (${inputs.irrigated ? 'irrigated' : 'non-irrigated'})`
+    : 'No practice change'
+  const extraDetails: Array<[string, string]> = [
+    ['Permanence Factor', results.permanenceFactor !== null ? formatPercent(results.permanenceFactor) : 'Not modeled'],
+    ['Integrity Risk (CarbonVal heuristic)', `${results.integrity.level[0].toUpperCase()}${results.integrity.level.slice(1)} (score ${results.integrity.score})`],
+  ]
+  if (inputs.landType === 'cropland') extraDetails.unshift(['Practice', practiceLabel])
+  if (isForest(inputs.landType)) {
+    extraDetails.unshift(['EPA L3 Ecoregion', region ? `${region.name} (${region.code})` : 'No regional risk data'])
+    extraDetails.push(['Enrollment Risk', (inputs.adverseSelection ?? true) ? 'On (P25 permanence)' : 'Off (median)'])
+  }
 
   return (
     <>
@@ -135,6 +149,7 @@ export default function ReportExport({ inputs, results, scenarioComparison }: Pr
               ['Protection Status', protectionLabel],
               ['Price Scenario', PRICE_SCENARIO_LABELS[inputs.priceScenario]],
               ['Additionality', ADDITIONALITY_LEVEL_LABELS[inputs.additionalityLevel]],
+              ...extraDetails,
             ].map(([label, value]) => (
               <div key={label}>
                 <p style={{ fontSize: '10px', color: '#9ca3af', margin: '0 0 2px' }}>{label}</p>
@@ -150,7 +165,7 @@ export default function ReportExport({ inputs, results, scenarioComparison }: Pr
             Estimated Net Value
           </p>
           <p style={{ fontSize: '36px', fontWeight: 800, color: '#1a4008', margin: '0 0 8px', letterSpacing: '-1px' }}>
-            {formatCurrency(results.netValue)}
+            {available ? formatCurrency(results.netValue) : 'Data unavailable'}
           </p>
           <div style={{ display: 'flex', gap: '32px' }}>
             <div>
@@ -240,8 +255,11 @@ export default function ReportExport({ inputs, results, scenarioComparison }: Pr
         {/* Methodology Disclaimer */}
         <div style={{ backgroundColor: '#fffbeb', border: '1px solid #fde68a', borderRadius: '6px', padding: '12px 14px', marginBottom: '20px' }}>
           <p style={{ fontSize: '10px', color: '#92400e', margin: 0, lineHeight: 1.5 }}>
-            <strong>Educational estimate only.</strong> Results are based on IPCC Tier 1 default coefficients
-            and VCM market reference data. Actual carbon project values require third-party verification by
+            <strong>Educational estimate only — for screening and decision support, not for registering or
+            selling credits.</strong> Forest results use IPCC Tier 1 growth rates (coarse at the parcel scale) and
+            Anderegg et al. (2022) / CarbonPlan reversal-risk data (CC-BY-4.0) with CARB U.S. Forest Projects
+            Protocol (2015) buffer values; cropland results use COMET-Planner v4.0 county estimates. Prices use
+            VCM market reference data. Actual carbon project values require third-party verification by
             an accredited registry (Verra, Gold Standard, or ACR). Coefficients, adjustment factors, and data
             sources are documented at <strong>carbonval.vercel.app/methodology</strong>.
           </p>

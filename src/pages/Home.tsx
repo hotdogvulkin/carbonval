@@ -4,6 +4,7 @@ import ResultsPanel from '../components/ResultsPanel'
 import MapPicker from '../components/MapPicker'
 import type { ValuationInputs } from '../types'
 import type { ClassificationResult } from '../lib/earthEngine'
+import { useParcelContext } from '../lib/useParcelContext'
 
 const DEFAULT_INPUTS: ValuationInputs = {
   landType: 'evergreenForest',
@@ -12,15 +13,25 @@ const DEFAULT_INPUTS: ValuationInputs = {
   priceScenario: 'mid',
   protectionStatus: 'protected',
   additionalityLevel: 'moderate',
+  irrigated: false,
+  adverseSelection: true,
 }
 
 export default function Home() {
   const [inputs, setInputs] = useState<ValuationInputs>(DEFAULT_INPUTS)
   const [autoDetected, setAutoDetected] = useState(false)
+  const [classification, setClassification] = useState<ClassificationResult | undefined>()
+  const ctx = useParcelContext(inputs.location)
 
-  function handleClassify(result: ClassificationResult) {
-    setInputs(prev => ({ ...prev, landType: result.landType }))
+  function handleClassify(result: ClassificationResult, coords: { lat: number; lng: number }) {
+    setInputs(prev => ({ ...prev, landType: result.landType, detectedLandType: result.landType, location: coords }))
+    setClassification(result)
     setAutoDetected(true)
+  }
+
+  function handleLocationOnly(coords: { lat: number; lng: number }) {
+    setInputs(prev => ({ ...prev, location: coords, detectedLandType: undefined }))
+    setClassification(undefined)
   }
 
   return (
@@ -47,7 +58,7 @@ export default function Home() {
               href="/methodology"
               className="text-sm text-green-800 hover:text-green-600 font-medium transition-colors"
             >
-              Methodology {'\u2192'}
+              Methodology {'→'}
             </a>
           </nav>
         </div>
@@ -55,7 +66,7 @@ export default function Home() {
 
       <main className="max-w-6xl mx-auto px-6 py-8 space-y-6">
 
-        <MapPicker onClassify={handleClassify} />
+        <MapPicker onClassify={handleClassify} onClassifyFailed={handleLocationOnly} />
 
         {autoDetected && (
           <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg px-4 py-2.5">
@@ -73,8 +84,8 @@ export default function Home() {
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <InputPanel inputs={inputs} onChange={setInputs} />
-          <ResultsPanel inputs={inputs} />
+          <InputPanel inputs={inputs} onChange={setInputs} ctx={ctx} />
+          <ResultsPanel inputs={inputs} ctx={ctx} classification={classification} />
         </div>
 
       </main>

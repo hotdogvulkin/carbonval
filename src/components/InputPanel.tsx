@@ -1,14 +1,32 @@
-import type { ValuationInputs, LandType, ProjectDuration, PriceScenario, ProtectionStatus, AdditionalityLevel } from '../types'
+import type { ValuationInputs, LandType, ProjectDuration, PriceScenario, ProtectionStatus, AdditionalityLevel, CpsPractice, ParcelContext } from '../types'
 import {
   LAND_TYPE_LABELS,
   ADDITIONALITY_LEVEL_LABELS,
   ADDITIONALITY_LEVEL_DESCRIPTIONS,
+  COMET_PRACTICES,
+  COMET_PRACTICE_ORDER,
 } from '../lib/constants'
 import { VCM_MARKET_DATA } from '../lib/marketData'
+import { isForest, selectCometRate, formatNumber } from '../lib/carbonModel'
 
 interface Props {
   inputs: ValuationInputs
   onChange: (inputs: ValuationInputs) => void
+  ctx: ParcelContext
+}
+
+function Toggle({ on, onClick, label }: { on: boolean; onClick: () => void; label: string }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${on ? 'bg-green-700' : 'bg-gray-300'}`}
+      role="switch"
+      aria-checked={on}
+      aria-label={label}
+    >
+      <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${on ? 'translate-x-4' : 'translate-x-1'}`} />
+    </button>
+  )
 }
 
 const LAND_TYPES: LandType[] = [
@@ -26,12 +44,16 @@ const DURATIONS: ProjectDuration[] = [10, 20, 30]
 const PRICE_SCENARIOS: PriceScenario[] = ['conservative', 'mid', 'premium']
 const ADDITIONALITY_LEVELS: AdditionalityLevel[] = ['conservative', 'moderate', 'high']
 
-export default function InputPanel({ inputs, onChange }: Props) {
+export default function InputPanel({ inputs, onChange, ctx }: Props) {
   function set<K extends keyof ValuationInputs>(key: K, value: ValuationInputs[K]) {
     onChange({ ...inputs, [key]: value })
   }
 
   const acresError = inputs.acres <= 0 || isNaN(inputs.acres)
+  const irrigated = inputs.irrigated ?? false
+  const adverseSelection = inputs.adverseSelection ?? true
+  const practice = inputs.cpsNumber !== undefined ? COMET_PRACTICES[inputs.cpsNumber] : null
+  const rate = inputs.cpsNumber !== undefined && ctx.cometRow ? selectCometRate(ctx.cometRow, inputs.cpsNumber, irrigated) : null
 
   return (
     <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-6">
@@ -85,6 +107,44 @@ export default function InputPanel({ inputs, onChange }: Props) {
           ))}
         </select>
       </div>
+
+      {/* Cropland practice + irrigation */}
+      {inputs.landType === 'cropland' && (
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-gray-700">Conservation Practice (change from current management)</label>
+            <select
+              value={inputs.cpsNumber ?? ''}
+              onChange={e => set('cpsNumber', e.target.value ? (Number(e.target.value) as CpsPractice) : undefined)}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-700"
+            >
+              <option value="">No practice change</option>
+              {COMET_PRACTICE_ORDER.map(num => (
+                <option key={num} value={num}>CPS {num} — {COMET_PRACTICES[num].label}</option>
+              ))}
+            </select>
+            {practice ? (
+              <p className="text-xs text-gray-400 leading-snug">
+                COMET-Planner scenario: {practice.implementation.replace('{irrigation}', irrigated ? 'Irrigated' : 'Non-Irrigated')}.
+                {' '}
+                {!inputs.location
+                  ? 'Drop a pin on the map to look up the county rate.'
+                  : ctx.countyStatus === 'loading'
+                    ? 'Looking up county…'
+                    : rate !== null
+                      ? `County rate: ${formatNumber(rate, 3)} MT CO₂e/acre/yr.`
+                      : 'COMET-Planner has no estimate for this county and scenario.'}
+              </p>
+            ) : (
+              <p className="text-xs text-gray-400">No practice change means no soil-carbon stock change, so no additional carbon is credited.</p>
+            )}
+          </div>
+          <div className="flex items-center justify-between">
+            <label className="text-sm font-medium text-gray-700">Irrigated cropland</label>
+            <Toggle on={irrigated} onClick={() => set('irrigated', !irrigated)} label="Irrigated cropland" />
+          </div>
+        </div>
+      )}
 
       {/* Project Duration */}
       <div className="space-y-1.5">
@@ -169,9 +229,24 @@ export default function InputPanel({ inputs, onChange }: Props) {
           ))}
         </div>
         <p className="text-xs text-gray-400">
-          Unprotected parcels receive an 18% permanence discount per IPCC guidelines.
+          Protected (conservation easement / public / tribal) uses CARB's QCE risk values; unprotected uses CARB's no-QCE values. Forest only.
         </p>
       </div>
+
+      {/* Enrollment risk (adverse selection) — forest only */}
+      {isForest(inputs.landType) && (
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between">
+            <label className="text-sm font-medium text-gray-700">Enrollment risk (adverse selection)</label>
+            <Toggle on={adverseSelection} onClick={() => set('adverseSelection', !adverseSelection)} label="Enrollment risk" />
+          </div>
+          <p className="text-xs text-gray-400">
+            {adverseSelection
+              ? 'ON — uses the 75th percentile of regional risk (P25 permanence), assuming higher-risk parcels are likelier to enroll.'
+              : 'OFF — uses the regional median permanence.'}
+          </p>
+        </div>
+      )}
 
       {/* Additionality */}
       <div className="space-y-1.5">

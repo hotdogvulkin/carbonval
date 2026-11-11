@@ -2,8 +2,11 @@ import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import ResultsPanel from '../components/ResultsPanel'
-import type { ValuationInputs, LandType, ProjectDuration, PriceScenario, ProtectionStatus, AdditionalityLevel } from '../types'
+import type { ValuationInputs, LandType, ProjectDuration, PriceScenario, ProtectionStatus, AdditionalityLevel, CpsPractice } from '../types'
+import { COMET_PRACTICE_ORDER } from '../lib/constants'
+import { useParcelContext } from '../lib/useParcelContext'
 
+// V5 columns may be absent if the migration has not been applied; all are optional.
 interface ValuationRow {
   land_type: string
   acres: number
@@ -12,6 +15,29 @@ interface ValuationRow {
   protection_status: string
   additionality_level: string | null
   created_at: string
+  lat?: number | null
+  lng?: number | null
+  cps_number?: number | null
+  irrigated?: boolean | null
+  adverse_selection?: boolean | null
+  detected_land_type?: string | null
+}
+
+function rowToInputs(data: ValuationRow): ValuationInputs {
+  const cps = COMET_PRACTICE_ORDER.find(c => c === data.cps_number) as CpsPractice | undefined
+  return {
+    landType: data.land_type as LandType,
+    acres: data.acres,
+    duration: data.duration as ProjectDuration,
+    priceScenario: data.price_scenario as PriceScenario,
+    protectionStatus: data.protection_status as ProtectionStatus,
+    additionalityLevel: (data.additionality_level ?? 'moderate') as AdditionalityLevel,
+    location: data.lat != null && data.lng != null ? { lat: data.lat, lng: data.lng } : undefined,
+    cpsNumber: cps,
+    irrigated: data.irrigated ?? false,
+    adverseSelection: data.adverse_selection ?? true,
+    detectedLandType: (data.detected_land_type ?? undefined) as LandType | undefined,
+  }
 }
 
 export default function Valuation() {
@@ -20,6 +46,7 @@ export default function Valuation() {
   const [savedAt, setSavedAt] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
+  const ctx = useParcelContext(inputs?.location)
 
   useEffect(() => {
     if (!id) {
@@ -30,21 +57,14 @@ export default function Valuation() {
 
     supabase
       .from('valuations')
-      .select('land_type, acres, duration, price_scenario, protection_status, additionality_level, created_at')
+      .select('*')
       .eq('id', id)
       .single()
       .then(({ data, error }: { data: ValuationRow | null; error: { message: string } | null }) => {
         if (error || !data) {
           setNotFound(true)
         } else {
-          setInputs({
-            landType: data.land_type as LandType,
-            acres: data.acres,
-            duration: data.duration as ProjectDuration,
-            priceScenario: data.price_scenario as PriceScenario,
-            protectionStatus: data.protection_status as ProtectionStatus,
-            additionalityLevel: (data.additionality_level ?? 'moderate') as AdditionalityLevel,
-          })
+          setInputs(rowToInputs(data))
           setSavedAt(data.created_at)
         }
         setLoading(false)
@@ -93,6 +113,7 @@ export default function Valuation() {
         {!loading && inputs && (
           <ResultsPanel
             inputs={inputs}
+            ctx={ctx}
             readOnly
             savedAt={savedAt ?? undefined}
           />

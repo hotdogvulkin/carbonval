@@ -41,9 +41,10 @@ const CONFIDENCE_DOT: Record<'high' | 'medium' | 'low', string> = {
 
 interface MapPickerProps {
   onClassify: (result: ClassificationResult, coords: { lat: number; lng: number }) => void
+  onClassifyFailed?: (coords: { lat: number; lng: number }) => void
 }
 
-export default function MapPicker({ onClassify }: MapPickerProps) {
+export default function MapPicker({ onClassify, onClassifyFailed }: MapPickerProps) {
   const [pin, setPin] = useState<{ lat: number; lng: number } | null>(null)
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<ClassificationResult | null>(null)
@@ -60,6 +61,7 @@ export default function MapPicker({ onClassify }: MapPickerProps) {
       setResult(classification)
       onClassify(classification, { lat, lng })
     } catch (err) {
+      onClassifyFailed?.({ lat, lng })
       setError(err instanceof Error ? err.message : 'Classification failed')
     } finally {
       setLoading(false)
