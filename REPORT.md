@@ -183,8 +183,14 @@ shows "Drop a pin…" instead of a number, because no regional risk can be looke
 ## Part E — ship
 
 Committed in logical chunks on `main`: data, COMET data, model, UI, Save & Share, Methodology, tests,
-then this report. Pushed only after the tests and the build passed. The live-site check is in the next
-section.
+then this report. Pushed only after the tests and the build passed.
+
+**Live site confirmed (2026-11-11 17:32):**
+- carbonval.vercel.app serves bundle `index-BejUi9h7.js`, the same hash as the local build. The bundle
+  contains the new strings: "No regional risk data for this location", the screening caveat, the
+  integrity badge, and the practice labels.
+- `/data/ecoregions.json` and `/data/comet_cropland.json` are served as JSON. The SPA rewrite does not
+  intercept them.
 
 ---
 
