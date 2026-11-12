@@ -204,11 +204,12 @@ the shipped data files.
 |---|---|---|---|---|---|---|
 | California mixed forest — Placer Co., CA (39.25, −120.75) | 0.82 / 1,593 t / $21.4K | Sierra Nevada (5), risk pct 98.5 | 32.7% [45.6%] | 635 t [887 t] | $8.5K [$11.9K] | Medium (4) |
 | Southeast evergreen forest — Laurens Co., GA (32.5, −83.0) | 0.82 / 1,842 t / $25.4K | Southeastern Plains (65), risk pct 45.8 | 84.8% [85.9%] | 1,906 t [1,930 t] | $26.3K [$26.6K] | Low (2) |
-| Midwest cropland, no-till — Marshall Co., IA (41.88, −93.1) | 0.82 / 149 t / $1.8K (IPCC 0.3 tCO₂/ha/yr) | — (COMET county 19127) | not modeled | 896 t | $10.8K | Medium (3) |
+| Midwest cropland, no-till — Marshall Co., IA (41.88, −93.1) | 0.82 / 149 t / $1.8K (IPCC 0.3 tCO₂/ha/yr) | — (COMET county 19127) | 88.0% (Verra minimum buffer) | 789 t | $9.5K | Medium (3) |
 
 The Iowa no-till increase is large. COMET's 0.5975 MT CO₂e/ac/yr for this county (it includes N₂O and
-fuel savings) replaces the generic 0.3 tCO₂/ha/yr (≈ 0.12 per acre). There is also no longer a
-permanence discount for cropland (see TODOs).
+fuel savings) replaces the generic 0.3 tCO₂/ha/yr (≈ 0.12 per acre). Since the follow-up, cropland
+also carries Verra's 12% minimum buffer (the first version of this report showed 896 t / $10.8K with no
+discount).
 
 ---
 
@@ -217,22 +218,79 @@ permanence discount for cropland (see TODOs).
 | Where | TODO |
 |---|---|
 | `src/lib/constants.ts` (SEQUESTRATION_RATES) | Forest growth rates are still IPCC Tier 1 defaults and are coarse at the parcel scale. Replace with regional growth data (e.g. FIA-based) once sourced. |
-| `src/lib/carbonModel.ts` (cropland) | Soil-carbon reversal risk for cropland is not modeled; no sourced value. |
-| `src/lib/carbonModel.ts` (other land) | Reversal risk for shrubland, grassland, wetland and other is not modeled; no sourced value. These no longer get the uncited 0.82 factor. |
-| `src/lib/constants.ts` (CO_BENEFITS) | Co-benefit multipliers aren't traceable to a specific published table. |
-| `src/lib/constants.ts` (ADDITIONALITY_LEVELS) | The 0.60 / 0.75 / 0.90 factors were not located in VM0007; verify. |
-| `src/lib/constants.ts` (VERIFICATION_COST) | No single published source for 20%. |
+| — (resolved in follow-up) | Non-forest reversal risk now uses Verra's 12% AFOLU minimum buffer; it is still not modeled in detail. |
+| `src/lib/constants.ts` (CO_BENEFITS) | No source supports per-land-type multipliers. See REPORT-constants.md. |
+| `src/lib/constants.ts` (ADDITIONALITY_LEVELS) | Illustrative assumptions only. See REPORT-constants.md. |
+| `src/lib/constants.ts` (VERIFICATION_COST) | No single published source for 20%. See REPORT-constants.md. |
 
 ## Skipped, flagged or not fixed
 
-- **Pre-existing issues noticed but left unchanged** (outside this task's scope):
-  - The "High" additionality option is described as "land already informally protected or low
-    conversion risk", yet it earns the largest factor (0.90). Already-protected land is usually *less*
-    additional. The badge counts "High" as the riskiest choice, but the factor itself is unchanged.
-  - NLCD class 81 (Pasture/Hay) maps to Grassland in `earthEngine.ts`, but Methodology §11 says Cropland.
+- **Pre-existing issues** (additionality wording, Pasture/Hay mapping) were fixed in the follow-up below.
 - **COMET download date:** the requested citation needs the download date. I used 2026-10-21, the file's
   modification date. Please correct it in `COMET_CITATION` if that's wrong.
 - **No new dependencies or config changes** were needed. Tests use Node's built-in runner.
 - **Slow builds:** `node_modules` on the iCloud-synced Desktop was almost entirely "dataless" (evicted).
   That was the cause of the 13-minute build. I forced the files to download with read-only `cat` and
   did not reinstall anything.
+
+---
+
+## Follow-up (2026-11-11, second run)
+
+1. **Non-forest reversal buffer.**
+   - Cropland, shrubland, grassland, wetland and other now use Verra's AFOLU minimum buffer:
+     `VERRA_MIN_BUFFER = 0.12` (AFOLU Non-Permanence Risk Tool v4.2, §2.5.2), so the permanence
+     factor is 0.88.
+   - The UI and PDF label it "minimum buffer (Verra), reversal risk not modeled in detail".
+   - Methodology §1 and §4 are updated, and Limitations now explains how cropland reversal is
+     approximated.
+   - Forest is unchanged.
+   - "No practice" still returns zero, and needs-pin / no-data states still show no factor.
+2. **Additionality labels.**
+   - High = "land at high risk of conversion or development"; Conservative = "land already protected
+     or unlikely to change". The factor values are unchanged.
+   - The badge points still fit: High remains the largest and least-evidenced claim. I updated only
+     the rationale text on Methodology §5.
+   - I also removed the uncited "default IPCC assumption" wording from Moderate, and deleted the
+     unused `ADDITIONALITY_FACTOR` constant that carried the same claim.
+3. **VM0007 claim removed.**
+   - No UI or Methodology text says the factors are calibrated to, or taken from, VM0007.
+   - The input panel and Methodology §6 now call them CarbonVal's illustrative assumptions.
+   - They are listed under Known limitations (§13).
+4. **Uncited constants.** The research is in [REPORT-constants.md](REPORT-constants.md). No values were
+   changed. In short:
+   - **Co-benefit premiums:** the evidence is about certification (EM 2023: 78%; Lou et al. 2022:
+     6.6%–29%), not about land type.
+   - **Registry fees:** about 1.5%–2.3% of value at $15/t (Verra $0.23/VCU; ACR $0.30 activation +
+     transfer and retirement fees). There is no official 20% figure.
+   - **Additionality:** empirical studies point lower than 0.60–0.90 (Badgley et al. 2022: 29.4%
+     over-credited; Probst et al. 2024: <16% real overall).
+5. **CPS 888 check: a COMET data issue, not a reading error.**
+   - **What we read:** CarbonVal reads `total_ghg_co2` for both 329 and 888. In the COMET file,
+     scenario − baseline equals that column, and sample sizes match.
+   - **Scenarios match:** 888's scenario emissions are essentially the same as 329's (median 0.156 vs
+     0.156 MT CO₂e/ac/yr).
+   - **Baseline differs:** the 888 row "**Intensive** Till to No Till + 15% N reduction" has a
+     different baseline in the *Baseline Emissions* sheet. In 98.8% of counties (both irrigation
+     settings) it is identical to the baseline of "**Reduced** Till to No Till + 15% N reduction".
+     It is not the intensive-till baseline that 329, 590 and the other 888 combinations (e.g. No-Till
+     + Cover Crop) use.
+   - **Example (Marshall Co., IA, non-irrigated):**
+
+     | Row | Baseline | Scenario | Reduction |
+     |---|---|---|---|
+     | 329 | −0.386 | 0.211 | 0.598 |
+     | 888 | +0.043 | 0.234 | 0.190 |
+
+   - **Against the intensive-till baseline,** 888 would be about 0.47 (median), similar to No-Till
+     alone.
+   - **No code change:** we read the published column correctly, so per the instruction I left the
+     code alone.
+   - **Recommendation:** report this to the COMET-Planner team. Until it's resolved, either hide CPS
+     888 or show a caveat; the published 888 value appears to understate the benefit against an
+     intensive-till start.
+6. **Pasture/Hay.** Methodology §11 now lists NLCD 81 Pasture/Hay → Grassland and 82 Cultivated Crops →
+   Cropland, matching `earthEngine.ts`.
+
+**Verification:** 24 tests pass, including new tests for the Verra buffer (non-forest and cropland) and
+additionality description order. `npm run build` passes.
