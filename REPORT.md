@@ -202,14 +202,17 @@ the shipped data files.
 
 | Parcel (pin) | Before: permanence / credits / net | After: ecoregion | After: permanence | After: credits | After: net value | Badge |
 |---|---|---|---|---|---|---|
-| California mixed forest — Placer Co., CA (39.25, −120.75) | 0.82 / 1,593 t / $21.4K | Sierra Nevada (5), risk pct 98.5 | 32.7% [45.6%] | 635 t [887 t] | $8.5K [$11.9K] | Medium (4) |
-| Southeast evergreen forest — Laurens Co., GA (32.5, −83.0) | 0.82 / 1,842 t / $25.4K | Southeastern Plains (65), risk pct 45.8 | 84.8% [85.9%] | 1,906 t [1,930 t] | $26.3K [$26.6K] | Low (2) |
+| California mixed forest — Placer Co., CA (39.25, −120.75) | 0.82 / 1,593 t / $21.4K | Sierra Nevada (5), risk pct 98.5 | 32.7% [45.6%] | 635 t [887 t] | $7.6K [$10.6K] | Medium (4) |
+| Southeast evergreen forest — Laurens Co., GA (32.5, −83.0) | 0.82 / 1,842 t / $25.4K | Southeastern Plains (65), risk pct 45.8 | 84.8% [85.9%] | 1,906 t [1,930 t] | $22.9K [$23.2K] | Low (2) |
 | Midwest cropland, no-till — Marshall Co., IA (41.88, −93.1) | 0.82 / 149 t / $1.8K (IPCC 0.3 tCO₂/ha/yr) | — (COMET county 19127) | 88.0% (Verra minimum buffer) | 789 t | $9.5K | Medium (3) |
 
 The Iowa no-till increase is large. COMET's 0.5975 MT CO₂e/ac/yr for this county (it includes N₂O and
 fuel savings) replaces the generic 0.3 tCO₂/ha/yr (≈ 0.12 per acre). Since the follow-up, cropland
 also carries Verra's 12% minimum buffer (the first version of this report showed 896 t / $10.8K with no
 discount).
+
+Since the final cleanup, co-benefit multipliers are 1.0 for all land types, so forest net values dropped
+(earlier: CA $8.5K [$11.9K] with 1.12×, GA $26.3K [$26.6K] with 1.15×). Credits are unchanged.
 
 ---
 
@@ -219,9 +222,9 @@ discount).
 |---|---|
 | `src/lib/constants.ts` (SEQUESTRATION_RATES) | Forest growth rates are still IPCC Tier 1 defaults and are coarse at the parcel scale. Replace with regional growth data (e.g. FIA-based) once sourced. |
 | — (resolved in follow-up) | Non-forest reversal risk now uses Verra's 12% AFOLU minimum buffer; it is still not modeled in detail. |
-| `src/lib/constants.ts` (CO_BENEFITS) | No source supports per-land-type multipliers. See REPORT-constants.md. |
-| `src/lib/constants.ts` (ADDITIONALITY_LEVELS) | Illustrative assumptions only. See REPORT-constants.md. |
-| `src/lib/constants.ts` (VERIFICATION_COST) | No single published source for 20%. See REPORT-constants.md. |
+| `src/lib/constants.ts` (CO_BENEFITS) | Set to 1.0 for all land types (no source ties a premium to land type). Constant kept in case a sourced premium is added. See REPORT-constants.md. |
+| `src/lib/constants.ts` (ADDITIONALITY_LEVELS) | Illustrative assumption, labeled in the UI and listed under Known Limitations. See REPORT-constants.md. |
+| `src/lib/constants.ts` (VERIFICATION_COST) | No published source for 20%; labeled as an illustrative assumption and listed under Known Limitations. See REPORT-constants.md. |
 
 ## Skipped, flagged or not fixed
 
@@ -294,3 +297,25 @@ discount).
 
 **Verification:** 24 tests pass, including new tests for the Verra buffer (non-forest and cropland) and
 additionality description order. `npm run build` passes.
+
+## Final cleanup (2026-11-11, third run)
+
+1. **CPS 888 removed from the practice selector.** New `COMET_SELECTABLE_PRACTICES` (329, 345, 340,
+   590, 336) drives the selector and the Methodology §3 table. 888 stays in `comet_cropland.json` and
+   `COMET_PRACTICE_ORDER`, so the data layout and any saved 888 valuations still load. Methodology §3
+   explains why: in 98.8% of counties COMET measures 888 against a reduced-till baseline rather than
+   intensive till.
+2. **Co-benefit multipliers set to 1.0** for every land type; `CO_BENEFITS` is kept with a TODO. The
+   "calibrated to observed VCM price differentials" sentence and the multiplier table are gone.
+   Methodology §8 now says co-benefit premiums exist in the market but no source ties them to land type,
+   so none is applied. Forest net values fall by 12–15% (see the before/after table above); cropland and
+   other land are unaffected.
+3. **"Illustrative assumption" labels.** The 20% verification cost and the additionality factors are
+   labeled as illustrative assumptions in the results panel (a line under the disclaimer, which stays
+   directly under the main result), the PDF export, the input panel, and Methodology §6 and §9. Both are
+   listed under Known Limitations with the findings from REPORT-constants.md, and the cited studies and
+   fee schedules were added to the reference list.
+
+**Verification:** 26 tests pass (new: all co-benefit multipliers are 1.0; 888 is not selectable but
+still reads from the data). `npm run build` passes.
+

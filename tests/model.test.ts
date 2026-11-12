@@ -6,7 +6,10 @@ import {
   isLandCoverOverridden, calculateValuation, generateProjection, calculateScenarioComparison,
   findEcoregion, hasRegionalRiskData, EMPTY_CONTEXT, verraMinimumPermanence, type EcoFeatureCollection,
 } from '../src/lib/carbonModel.ts'
-import { VERRA_MIN_BUFFER, ADDITIONALITY_LEVELS, ADDITIONALITY_LEVEL_DESCRIPTIONS } from '../src/lib/constants.ts'
+import {
+  VERRA_MIN_BUFFER, ADDITIONALITY_LEVELS, ADDITIONALITY_LEVEL_DESCRIPTIONS, CO_BENEFITS,
+  COMET_PRACTICE_ORDER, COMET_SELECTABLE_PRACTICES,
+} from '../src/lib/constants.ts'
 import type { ParcelContext, ValuationInputs, RegionalRisk } from '../src/types/index.ts'
 
 const near = (a: number, b: number, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${a} ≉ ${b}`)
@@ -122,7 +125,8 @@ test('forest valuation applies regional permanence and additionality', () => {
   near(out.annualSequestration, gross)
   near(out.adjustedAnnual, gross * 0.3693 * (1 - carbUnmodeledBuffer('unprotected')) * 0.75)
   near(out.totalCredits, out.adjustedAnnual * 20)
-  near(out.netValue, out.totalCredits * 15 * 1.15 * 0.8, 1e-6)
+  near(out.netValue, out.totalCredits * 15 * 1.0 * 0.8, 1e-6)
+  near(out.grossValue, out.totalCredits * 15, 1e-6)
 })
 
 test('Verra AFOLU minimum buffer: 12% → permanence 0.88', () => {
@@ -204,4 +208,17 @@ test('point-in-polygon ecoregion lookup, including holes and outside points', ()
   assert.equal(findEcoregion(fc, 5, 5), null)          // inside hole
   assert.equal(findEcoregion(fc, 5, 45)?.code, 'B')    // second part of MultiPolygon
   assert.equal(findEcoregion(fc, 50, 50), null)        // outside all
+})
+
+test('co-benefit multipliers are 1.0 for every land type (no land-type premium)', () => {
+  for (const [land, mult] of Object.entries(CO_BENEFITS)) assert.equal(mult, 1.0, land)
+  const wet = calculateValuation({ ...base, landType: 'wetland' }, okCtx())
+  near(wet.grossValue, wet.totalCredits * 15, 1e-6)
+})
+
+test('CPS 888 is not selectable but stays in the data layout', () => {
+  assert.ok(!COMET_SELECTABLE_PRACTICES.includes(888))
+  assert.deepEqual(COMET_SELECTABLE_PRACTICES, [329, 345, 340, 590, 336])
+  assert.ok(COMET_PRACTICE_ORDER.includes(888))
+  assert.equal(selectCometRate(ROW, 888, false), 0.1904)
 })

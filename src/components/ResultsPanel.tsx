@@ -4,6 +4,7 @@ import {
   calculateValuation, generateProjection, calculateScenarioComparison,
   formatCurrency, formatNumber, formatPercent, isForest, EMPTY_CONTEXT,
 } from '../lib/carbonModel'
+import { VERIFICATION_COST } from '../lib/constants'
 import { saveValuation } from '../lib/saveValuation'
 import ProjectionChart from './ProjectionChart'
 import ReportExport from './ReportExport'
@@ -119,6 +120,10 @@ export default function ResultsPanel({ inputs, ctx = EMPTY_CONTEXT, classificati
         <p className="text-xs text-gray-500 mt-3 leading-relaxed">
           For screening and decision support only — not for registering or selling credits.
           The integrity-risk badge is CarbonVal's own heuristic, not a rating from any ratings agency.
+        </p>
+        <p className="text-xs text-gray-400 mt-1 leading-relaxed">
+          Net value deducts a {formatPercent(VERIFICATION_COST, 0)} verification and registry cost and applies the
+          selected additionality factor; both are illustrative assumptions, not published values.
         </p>
 
         {savedAt && (

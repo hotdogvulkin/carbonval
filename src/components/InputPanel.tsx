@@ -4,7 +4,7 @@ import {
   ADDITIONALITY_LEVEL_LABELS,
   ADDITIONALITY_LEVEL_DESCRIPTIONS,
   COMET_PRACTICES,
-  COMET_PRACTICE_ORDER,
+  COMET_SELECTABLE_PRACTICES,
 } from '../lib/constants'
 import { VCM_MARKET_DATA } from '../lib/marketData'
 import { isForest, selectCometRate, formatNumber } from '../lib/carbonModel'
@@ -119,7 +119,7 @@ export default function InputPanel({ inputs, onChange, ctx }: Props) {
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-700"
             >
               <option value="">No practice change</option>
-              {COMET_PRACTICE_ORDER.map(num => (
+              {COMET_SELECTABLE_PRACTICES.map(num => (
                 <option key={num} value={num}>CPS {num} — {COMET_PRACTICES[num].label}</option>
               ))}
             </select>
@@ -276,7 +276,7 @@ export default function InputPanel({ inputs, onChange, ctx }: Props) {
           ))}
         </div>
         <p className="text-xs text-gray-400">
-          Illustrative CarbonVal assumptions (0.60 / 0.75 / 0.90), not values from any carbon standard.
+          Additionality factors (0.60 / 0.75 / 0.90) are an illustrative assumption, not values from any carbon standard.
         </p>
       </div>
     </div>

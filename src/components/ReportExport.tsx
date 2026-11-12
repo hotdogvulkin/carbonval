@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import type { ValuationInputs, ValuationOutputs, ScenarioComparison, ScenarioComparisonRow, RegionalRisk } from '../types'
 import { formatCurrency, formatNumber, formatPercent, isForest } from '../lib/carbonModel'
-import { LAND_TYPE_LABELS, ADDITIONALITY_LEVEL_LABELS, PRICE_SCENARIO_LABELS, COMET_PRACTICES } from '../lib/constants'
+import { LAND_TYPE_LABELS, ADDITIONALITY_LEVEL_LABELS, ADDITIONALITY_LEVELS, PRICE_SCENARIO_LABELS, COMET_PRACTICES, VERIFICATION_COST } from '../lib/constants'
 
 interface PdfTableRow {
   label: string
@@ -80,6 +80,7 @@ export default function ReportExport({ inputs, results, scenarioComparison, regi
       : results.permanenceSource === 'verra-minimum'
         ? `${formatPercent(results.permanenceFactor)} — minimum buffer (Verra), reversal risk not modeled in detail`
         : formatPercent(results.permanenceFactor)],
+    ['Verification & Registry Cost', `${formatPercent(VERIFICATION_COST, 0)} of gross value — illustrative assumption`],
     ['Integrity Risk (CarbonVal heuristic)', `${results.integrity.level[0].toUpperCase()}${results.integrity.level.slice(1)} (score ${results.integrity.score})`],
   ]
   if (inputs.landType === 'cropland') extraDetails.unshift(['Practice', practiceLabel])
@@ -152,7 +153,7 @@ export default function ReportExport({ inputs, results, scenarioComparison, regi
               ['Project Duration', durationLabel],
               ['Protection Status', protectionLabel],
               ['Price Scenario', PRICE_SCENARIO_LABELS[inputs.priceScenario]],
-              ['Additionality', ADDITIONALITY_LEVEL_LABELS[inputs.additionalityLevel]],
+              ['Additionality', `${ADDITIONALITY_LEVEL_LABELS[inputs.additionalityLevel]} (${ADDITIONALITY_LEVELS[inputs.additionalityLevel].toFixed(2)}, illustrative assumption)`],
               ...extraDetails,
             ].map(([label, value]) => (
               <div key={label}>

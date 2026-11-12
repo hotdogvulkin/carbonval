@@ -1,6 +1,6 @@
 import {
   SEQUESTRATION_RATES, ADDITIONALITY_LEVELS, VERIFICATION_COST, PRICE_PER_TON, CO_BENEFITS,
-  COMET_PRACTICES, COMET_PRACTICE_ORDER, COMET_CITATION, CARB_UNMODELED_RISKS,
+  COMET_PRACTICES, COMET_SELECTABLE_PRACTICES, COMET_CITATION, CARB_UNMODELED_RISKS,
   INTEGRITY_POINTS, INTEGRITY_THRESHOLDS, SENSITIVITY_SAMPLE_REGIONS,
   ADDITIONALITY_LEVEL_DESCRIPTIONS, VERRA_MIN_BUFFER,
 } from '../lib/constants'
@@ -225,7 +225,7 @@ export default function Methodology() {
                 </tr>
               </thead>
               <tbody>
-                {COMET_PRACTICE_ORDER.map(num => (
+                {COMET_SELECTABLE_PRACTICES.map(num => (
                   <tr key={num} className="border-t border-gray-100">
                     <td className="py-2 pr-4 font-mono text-xs text-green-900">{num}</td>
                     <td className="py-2 pr-4 font-medium text-gray-900">{COMET_PRACTICES[num].label}</td>
@@ -235,6 +235,12 @@ export default function Methodology() {
               </tbody>
             </table>
           </div>
+          <p>
+            <span className="font-semibold text-gray-900">CPS 888 not offered.</span>{' '}
+            COMET-Planner's combined No-Till + Nutrient Management practice (CPS 888) is not offered: in
+            98.8% of counties COMET measures it against a reduced-till baseline rather than intensive till,
+            which makes it look smaller than No-Till (CPS 329) alone.
+          </p>
           <p>
             <span className="font-semibold text-gray-900">Geography.</span>{' '}
             The pin is matched to a county with the FCC Area API. COMET-Planner reports values for
@@ -370,9 +376,9 @@ export default function Methodology() {
             Additionality is the principle that carbon credits should only represent
             sequestration that would not have occurred without the carbon project —
             i.e., the project must go beyond "business as usual." CarbonVal lets users pick one
-            of three additionality levels. The factors (0.60 / 0.75 / 0.90) are{' '}
-            <span className="font-semibold text-gray-900">CarbonVal's illustrative assumptions</span>;
-            they are not taken from any carbon standard or methodology.
+            of three additionality levels. The factors (0.60 / 0.75 / 0.90) are an{' '}
+            <span className="font-semibold text-gray-900">illustrative assumption</span> by CarbonVal;
+            they are not taken from any carbon standard or methodology (see Known Limitations).
           </p>
           <div className="bg-gray-50 rounded-lg border border-gray-200 p-4 space-y-3 text-sm">
             <div>
@@ -452,53 +458,15 @@ export default function Methodology() {
         {/* Section 8 — Co-benefits */}
         <Section number="8" title="Co-Benefit Price Multipliers">
           <p>
-            Different land types generate different levels of biodiversity,
-            water quality, and community co-benefits alongside carbon sequestration.
-            Markets consistently price these co-benefits into credit values. CarbonVal
-            applies a multiplicative premium to the base price per ton for each land type:
-          </p>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left">
-                  <th className="pb-2 pr-4 text-xs font-semibold text-gray-400 uppercase tracking-wide">Land Type</th>
-                  <th className="pb-2 pr-4 text-xs font-semibold text-gray-400 uppercase tracking-wide">Multiplier</th>
-                  <th className="pb-2 text-xs font-semibold text-gray-400 uppercase tracking-wide">Rationale</th>
-                </tr>
-              </thead>
-              <tbody>
-                {[
-                  { type: 'Wetland', mult: CO_BENEFITS.wetland, note: 'Highest — biodiversity, water filtration, flood control' },
-                  { type: 'Evergreen Forest', mult: CO_BENEFITS.evergreenForest, note: 'High — habitat, watershed protection' },
-                  { type: 'Deciduous Forest', mult: CO_BENEFITS.deciduousForest, note: 'High — habitat, watershed protection' },
-                  { type: 'Mixed Forest', mult: CO_BENEFITS.mixedForest, note: 'Moderate-high — diverse habitat' },
-                  { type: 'Shrubland', mult: CO_BENEFITS.shrubland, note: 'Moderate — pollinator habitat' },
-                  { type: 'Grassland', mult: CO_BENEFITS.grassland, note: 'Low-moderate — grazing, pollinator habitat' },
-                  { type: 'Cropland', mult: CO_BENEFITS.cropland, note: 'None — limited co-benefits' },
-                  { type: 'Other', mult: CO_BENEFITS.other, note: 'None — unclassified' },
-                ].map(row => (
-                  <tr key={row.type} className="border-t border-gray-100">
-                    <td className="py-2 pr-4 font-medium text-gray-900">{row.type}</td>
-                    <td className="py-2 pr-4 font-mono text-green-900">{row.mult.toFixed(2)}x</td>
-                    <td className="py-2 text-gray-500 text-xs">{row.note}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <p>
-            Multipliers are calibrated to observed VCM price differentials reported
-            in{' '}
-            <Citation href="https://www.ecosystemmarketplace.com">
-              Ecosystem Marketplace
-            </Citation>{' '}
-            transaction data. Wetlands receive the highest multiplier (1.20x)
-            consistent with their disproportionate ecosystem service value documented
-            in{' '}
-            <Citation href="https://www.ipcc.ch/report/ar6/wg2/">
-              IPCC AR6 Working Group II, Chapter 2
+            Co-benefit premiums exist in the market: credits with co-benefit certification (CCB, Gold
+            Standard, SDG claims) have sold at higher prices (
+            <Citation href="https://www.ecosystemmarketplace.com/articles/new-state-of-the-voluntary-carbon-markets-2023-finds-vcm-demand-concentrating-around-pricier-high-integrity-credits/">
+              Ecosystem Marketplace, 2023
             </Citation>
-            .
+            ;{' '}
+            <Citation href="https://doi.org/10.1038/s43247-022-00468-9">Lou et al., 2022</Citation>
+            ). However, no source we found ties a premium to land type, so CarbonVal does not apply
+            one: the co-benefit multiplier is {CO_BENEFITS.evergreenForest.toFixed(1)} for every land type.
           </p>
         </Section>
 
@@ -511,12 +479,13 @@ export default function Methodology() {
             <span className="font-semibold text-gray-900">
               {(VERIFICATION_COST * 100).toFixed(0)}% verification cost
             </span>{' '}
-            from gross value to estimate net revenue to the landowner.
+            from gross value to estimate net revenue to the landowner. This 20% is an{' '}
+            <span className="font-semibold text-gray-900">illustrative assumption</span>, not a
+            published figure (see Known Limitations).
           </p>
           <p>
-            This reflects the combined cost of third-party verification audits,
-            registry issuance fees, and project developer margins typical of
-            North American forestry projects on the{' '}
+            It is meant to stand in for the combined cost of third-party verification audits,
+            registry issuance fees, and project developer margins for projects on the{' '}
             <Citation href="https://verra.org">Verra</Citation>,{' '}
             <Citation href="https://americancarbonregistry.org">ACR</Citation>, and{' '}
             <Citation href="https://www.climateactionreserve.org">
@@ -626,6 +595,8 @@ export default function Methodology() {
             <li><span className="font-semibold text-gray-900">Generic cropland rate removed.</span> The IPCC 0.3 fallback credited carbon without any management change. Cropland now requires a specific practice and uses COMET-Planner county values for the exact practice and irrigation variant, without averaging variants.</li>
             <li><span className="font-semibold text-gray-900">Non-forest reversal buffer.</span> Cropland and other non-forest land now carry Verra's 12% AFOLU minimum buffer instead of no discount.</li>
             <li><span className="font-semibold text-gray-900">Additionality wording corrected.</span> “High” now means land at high risk of conversion (most additional) and “Conservative” means land already protected; the factors are described as illustrative assumptions rather than VM0007 values.</li>
+            <li><span className="font-semibold text-gray-900">Co-benefit multipliers set to 1.0.</span> No source ties a price premium to land type, so the earlier land-type multipliers (up to 1.20×) were removed.</li>
+            <li><span className="font-semibold text-gray-900">CPS 888 removed from the selector</span> because COMET measures it against a reduced-till baseline in most counties.</li>
             <li><span className="font-semibold text-gray-900">Integrity-risk badge and screening caveats added</span> so results are not read as registry-ready credit estimates.</li>
           </ul>
         </Section>
@@ -666,9 +637,23 @@ export default function Methodology() {
           </p>
           <p>
             <span className="font-semibold text-gray-900">Simplified additionality.</span>{' '}
-            The three additionality factors (0.60 / 0.75 / 0.90) are CarbonVal's illustrative assumptions,
-            not values from Verra VM0007 or any other standard. They are coarse proxies and remain the single
-            largest source of uncertainty in the model.
+            The three additionality factors (0.60 / 0.75 / 0.90) are an illustrative assumption, not values
+            from Verra VM0007 or any other standard; Verra, ACR and CARB treat additionality as a
+            project-level pass/fail test and publish no generic discount factors. Empirical studies point
+            lower: about 29% of credits over-credited in California's improved forest management projects
+            (Badgley et al., 2022), under 16% of credits representing real reductions across 2,346 projects
+            and about 25% for avoided deforestation (Probst et al., 2024), and most REDD+ sites showing no
+            significant reduction in deforestation (West et al., 2023). The 0.90 level has no support in
+            these studies. This remains the single largest source of uncertainty in the model.
+          </p>
+          <p>
+            <span className="font-semibold text-gray-900">Verification and registry cost.</span>{' '}
+            The flat {(VERIFICATION_COST * 100).toFixed(0)}% deduction is an illustrative assumption. No
+            official percentage exists. Registry per-credit fees alone are small: about 1.5% of value at
+            $15/t on Verra ($0.23 per VCU issuance levy) and about 2.3% on ACR (activation, transfer and
+            retirement fees, June 2026 schedule). Most real cost is fixed (validation and verification
+            audits, project design, inventory), so a flat percentage overstates costs for large projects
+            and understates them for small ones.
           </p>
           <p>
             <span className="font-semibold text-gray-900">Static pricing and single-pixel land cover.</span>{' '}
@@ -907,6 +892,41 @@ export default function Methodology() {
                 id: 14,
                 text: 'U.S. EPA. Level III Ecoregions of the Continental United States.',
                 href: 'https://www.epa.gov/eco-research/level-iii-and-iv-ecoregions-continental-united-states',
+              },
+              {
+                id: 15,
+                text: 'Badgley, G., Freeman, J., Hamman, J.J., Haya, B., Trugman, A.T., Anderegg, W.R.L., Cullenward, D. Systematic over-crediting in California\'s forest carbon offsets program. Global Change Biology, 28(4), 1433–1445, 2022.',
+                href: 'https://doi.org/10.1111/gcb.15943',
+              },
+              {
+                id: 16,
+                text: 'Probst, B.S., et al. Systematic assessment of the achieved emission reductions of carbon crediting projects. Nature Communications, 15, 9562, 2024.',
+                href: 'https://doi.org/10.1038/s41467-024-53645-z',
+              },
+              {
+                id: 17,
+                text: 'West, T.A.P., et al. Action needed to make carbon offsets from forest conservation work for climate change mitigation. Science, 381(6660), 873–877, 2023.',
+                href: 'https://doi.org/10.1126/science.ade3535',
+              },
+              {
+                id: 18,
+                text: 'Lou, J., Hultman, N., Patwardhan, A., Qiu, Y.L. Integrating sustainability into climate finance by quantifying the co-benefits and market impact of carbon projects. Communications Earth & Environment, 3, 137, 2022.',
+                href: 'https://doi.org/10.1038/s43247-022-00468-9',
+              },
+              {
+                id: 19,
+                text: 'Ecosystem Marketplace. State of the Voluntary Carbon Markets 2023 (press release). Forest Trends, 2023.',
+                href: 'https://www.ecosystemmarketplace.com/articles/new-state-of-the-voluntary-carbon-markets-2023-finds-vcm-demand-concentrating-around-pricier-high-integrity-credits/',
+              },
+              {
+                id: 20,
+                text: 'Verra. New Verra Program Fee Schedule FAQs.',
+                href: 'https://verra.org/new-verra-program-fee-schedule-faqs/',
+              },
+              {
+                id: 21,
+                text: 'ACR. Fee Schedule, effective June 1, 2026.',
+                href: 'https://acrcarbon.org/wp-content/uploads/2026/04/ACR-Fee-Schedule-April-2026.pdf',
               },
             ].map(ref => (
               <li key={ref.id} className="flex gap-3">

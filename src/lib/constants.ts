@@ -40,6 +40,11 @@ export const LAND_TYPE_LABELS: Record<LandType, string> = {
 export const COMET_PRACTICE_ORDER: CpsPractice[] = [329, 345, 340, 590, 336, 888]
 export const COMET_VARIANT_ORDER = ['nonIrrigated', 'irrigated'] as const
 
+// Practices offered in the selector. CPS 888 stays in the data file (and still reads for saved
+// valuations) but is not offered: in 98.8% of counties COMET-Planner's 888 baseline is the
+// reduced-till baseline, not intensive till (Baseline Emissions sheet; see REPORT.md, "CPS 888").
+export const COMET_SELECTABLE_PRACTICES: CpsPractice[] = COMET_PRACTICE_ORDER.filter(c => c !== 888)
+
 export const COMET_PRACTICES: Record<CpsPractice, { label: string; implementation: string }> = {
   329: { label: 'No-Till',                       implementation: 'Intensive Till to No Till or Strip Till on {irrigation} Cropland' },
   345: { label: 'Reduced Till',                  implementation: 'Intensive Till to Reduced Till on {irrigation} Cropland' },
@@ -120,16 +125,18 @@ export const INTEGRITY_THRESHOLDS: Array<{ minScore: number; level: IntegrityRis
   { minScore: 0, level: 'low' },
 ]
 
-// Co-benefit price multipliers. Source as documented on the Methodology page: Ecosystem
-// Marketplace VCM price differentials (State of the Voluntary Carbon Markets 2024) and
-// IPCC AR6 WGII Ch. 2. TODO: not traceable to a specific table; see REPORT-constants.md.
+// Co-benefit price multipliers: all 1.0 (no premium applied). Market studies find a premium for
+// co-benefit certification (Ecosystem Marketplace SOVCM 2023; Lou et al. 2022, Commun. Earth
+// Environ. 3:137), but no source ties a premium to land type. Kept so a sourced value can be added.
+// TODO: only replace with a land-type or certification premium that has a citable source; see
+// REPORT-constants.md.
 export const CO_BENEFITS: Record<LandType, number> = {
-  evergreenForest: 1.15,
-  deciduousForest: 1.15,
-  mixedForest: 1.12,
-  wetland: 1.20,
-  shrubland: 1.05,
-  grassland: 1.03,
+  evergreenForest: 1.0,
+  deciduousForest: 1.0,
+  mixedForest: 1.0,
+  wetland: 1.0,
+  shrubland: 1.0,
+  grassland: 1.0,
   cropland: 1.0,
   other: 1.0,
 }
@@ -169,8 +176,10 @@ export const ADDITIONALITY_LEVEL_DESCRIPTIONS: Record<AdditionalityLevel, string
   high: 'Land at high risk of conversion or development without this project',
 }
 
-// Registry and verification cost share (Verra, ACR, CAR registries, as documented on the
-// Methodology page). TODO: no single published source for 20%; see REPORT-constants.md.
+// Registry and verification cost share: CarbonVal's illustrative assumption, not a published figure
+// (listed under Known limitations on the Methodology page). Registry per-credit fees alone are
+// about 1.5–2.3% of value at $15/t (Verra fee FAQ; ACR Fee Schedule, June 2026).
+// TODO: no published source for 20%; see REPORT-constants.md.
 export const VERIFICATION_COST = 0.20
 
 // U.S. EPA, Greenhouse Gas Emissions from a Typical Passenger Vehicle, EPA-420-F-23-014 (June 2023)

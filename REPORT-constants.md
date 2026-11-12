@@ -111,3 +111,7 @@ real"):
 
 **Not changed in this run:** `CO_BENEFITS`, `VERIFICATION_COST`, `ADDITIONALITY_LEVELS`. Each still has
 a TODO in `src/lib/constants.ts` pointing here.
+
+**Later (final cleanup, same day):** `CO_BENEFITS` set to 1.0 for every land type (option (a) above).
+`VERIFICATION_COST` and `ADDITIONALITY_LEVELS` keep their values and are labeled as illustrative
+assumptions in the UI and Methodology.
