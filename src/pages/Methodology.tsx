@@ -2,6 +2,7 @@ import {
   SEQUESTRATION_RATES, ADDITIONALITY_LEVELS, VERIFICATION_COST, PRICE_PER_TON, CO_BENEFITS,
   COMET_PRACTICES, COMET_PRACTICE_ORDER, COMET_CITATION, CARB_UNMODELED_RISKS,
   INTEGRITY_POINTS, INTEGRITY_THRESHOLDS, SENSITIVITY_SAMPLE_REGIONS,
+  ADDITIONALITY_LEVEL_DESCRIPTIONS, VERRA_MIN_BUFFER,
 } from '../lib/constants'
 import { carbUnmodeledBuffer, formatPercent } from '../lib/carbonModel'
 import {
@@ -136,8 +137,9 @@ export default function Methodology() {
             <p><span className="text-gray-500">// Step 1 — Gross annual sequestration</span></p>
             <p>forest / other: gross = acres {'×'} 0.4047 {'×'} SEQUESTRATION_RATE[landType]</p>
             <p>cropland:       gross = acres {'×'} COMET[county, practice, irrigation]  (0 if no practice)</p>
-            <p className="pt-1"><span className="text-gray-500">// Step 2 — Reversal risk (forest only)</span></p>
-            <p>permanence = perm30[ecoregion, P25 or median] {'×'} (1 {'−'} CARB unmodeled buffer)</p>
+            <p className="pt-1"><span className="text-gray-500">// Step 2 — Reversal risk</span></p>
+            <p>forest:     permanence = perm30[ecoregion, P25 or median] {'×'} (1 {'−'} CARB unmodeled buffer)</p>
+            <p>non-forest: permanence = 1 {'−'} 0.12  <span className="text-gray-500">// Verra AFOLU minimum buffer</span></p>
             <p className="pt-1"><span className="text-gray-500">// Step 3 — Additionality</span></p>
             <p>adjustedAnnual = gross {'×'} permanence {'×'} additionality</p>
             <p className="pt-1"><span className="text-gray-500">// Step 4 — Total credits, price, verification cost</span></p>
@@ -334,8 +336,13 @@ export default function Methodology() {
             apply a separate floor.
           </p>
           <p>
-            Reversal risk is modeled for forest land types only. For cropland and other land types
-            no reversal discount is applied, and the results panel says so.
+            <span className="font-semibold text-gray-900">Non-forest land.</span>{' '}
+            Detailed reversal risk is modeled for forest land types only. Cropland, shrubland,
+            grassland, wetland and other land receive Verra's AFOLU minimum non-permanence buffer:
+            the AFOLU Non-Permanence Risk Tool v4.2, Section 2.5.2, sets a minimum risk rating of 12,
+            i.e. at least 12% of credits go to the buffer pool. CarbonVal applies a permanence factor
+            of {formatPercent(1 - VERRA_MIN_BUFFER, 0)} and labels it “minimum buffer (Verra), reversal risk
+            not modeled in detail”.
           </p>
         </Section>
 
@@ -347,7 +354,7 @@ export default function Methodology() {
             factors that make an estimate less likely to hold up:
           </p>
           <div className="bg-gray-50 rounded-lg border border-gray-200 p-4 space-y-1 text-sm">
-            <p>Additionality level: conservative +{INTEGRITY_POINTS.additionality.conservative}, moderate +{INTEGRITY_POINTS.additionality.moderate}, high +{INTEGRITY_POINTS.additionality.high} (claiming more credit with less evidence)</p>
+            <p>Additionality level: conservative +{INTEGRITY_POINTS.additionality.conservative}, moderate +{INTEGRITY_POINTS.additionality.moderate}, high +{INTEGRITY_POINTS.additionality.high} (a higher level is a larger credit claim that needs stronger counterfactual evidence, and is the costliest if wrong)</p>
             <p>Protection status: protected +{INTEGRITY_POINTS.protection.protected}, unprotected +{INTEGRITY_POINTS.protection.unprotected}</p>
             <p>Regional risk percentile (ecoregion median vs. all CONUS forest cells): below 50th +{INTEGRITY_POINTS.regionalRisk.below50}, 50th–74th +{INTEGRITY_POINTS.regionalRisk.from50}, 75th and above +{INTEGRITY_POINTS.regionalRisk.from75}, not available (non-forest or no data) +{INTEGRITY_POINTS.regionalRisk.unknown}</p>
             <p>Land cover overridden (chosen type differs from the satellite-detected type): +{INTEGRITY_POINTS.landCoverOverride}</p>
@@ -362,12 +369,10 @@ export default function Methodology() {
           <p>
             Additionality is the principle that carbon credits should only represent
             sequestration that would not have occurred without the carbon project —
-            i.e., the project must go beyond "business as usual." CarbonVal allows
-            users to select one of three additionality levels, calibrated to{' '}
-            <Citation href="https://verra.org/methodologies/vm0007-redd-methodology-framework-redd-mf-v1-6/">
-              Verra VM0007 (REDD Methodology Framework)
-            </Citation>{' '}
-            additionality scoring guidance:
+            i.e., the project must go beyond "business as usual." CarbonVal lets users pick one
+            of three additionality levels. The factors (0.60 / 0.75 / 0.90) are{' '}
+            <span className="font-semibold text-gray-900">CarbonVal's illustrative assumptions</span>;
+            they are not taken from any carbon standard or methodology.
           </p>
           <div className="bg-gray-50 rounded-lg border border-gray-200 p-4 space-y-3 text-sm">
             <div>
@@ -375,9 +380,8 @@ export default function Methodology() {
                 Conservative — {ADDITIONALITY_LEVELS.conservative}
               </p>
               <p className="text-gray-500 text-xs mt-0.5">
-                Land likely to be developed or converted without this project. High
-                counterfactual threat; credits reflect only the most defensible
-                additionality claim.
+                {ADDITIONALITY_LEVEL_DESCRIPTIONS.conservative}. Much of the carbon would likely be
+                stored anyway, so the smallest share is credited.
               </p>
             </div>
             <div className="border-t border-gray-200 pt-3">
@@ -385,9 +389,7 @@ export default function Methodology() {
                 Moderate — {ADDITIONALITY_LEVELS.moderate} (default)
               </p>
               <p className="text-gray-500 text-xs mt-0.5">
-                Some development pressure — the IPCC Tier 1 conservative default.
-                Approximately 25% of gross sequestration is assumed to occur
-                regardless of the project.
+                {ADDITIONALITY_LEVEL_DESCRIPTIONS.moderate}.
               </p>
             </div>
             <div className="border-t border-gray-200 pt-3">
@@ -395,10 +397,9 @@ export default function Methodology() {
                 High — {ADDITIONALITY_LEVELS.high}
               </p>
               <p className="text-gray-500 text-xs mt-0.5">
-                Land already informally protected or facing low conversion risk.
-                Only 10% of gross sequestration is assumed to be non-additional.
-                Appropriate for parcels with existing conservation agreements or
-                documented low development pressure.
+                {ADDITIONALITY_LEVEL_DESCRIPTIONS.high}. Credits are most additional, but this is
+                also the largest claim and needs the strongest site-specific evidence (threat
+                mapping, documented conversion pressure).
               </p>
             </div>
           </div>
@@ -581,7 +582,8 @@ export default function Methodology() {
                   { code: '43', label: 'Mixed Forest', type: 'Mixed Forest' },
                   { code: '52', label: 'Shrub/Scrub', type: 'Shrubland' },
                   { code: '71', label: 'Grassland/Herbaceous', type: 'Grassland' },
-                  { code: '81, 82', label: 'Pasture/Hay, Cultivated Crops', type: 'Cropland' },
+                  { code: '81', label: 'Pasture/Hay', type: 'Grassland' },
+                  { code: '82', label: 'Cultivated Crops', type: 'Cropland' },
                   { code: '90, 95', label: 'Woody Wetlands, Emergent Herbaceous Wetlands', type: 'Wetland' },
                   { code: '11, 12, 21–24, 31', label: 'Open Water, Ice/Snow, Developed, Barren Land', type: 'Other' },
                 ].map(row => (
@@ -622,6 +624,8 @@ export default function Methodology() {
             <li><span className="font-semibold text-gray-900">CARB structure instead of an ad-hoc floor.</span> The unmodeled buffer uses CARB's adopted 2015 protocol values (not the 2014 proposed-rulemaking values, which differed for social risk).</li>
             <li><span className="font-semibold text-gray-900">Enrollment-risk (adverse selection) toggle added,</span> defaulting to the more conservative 75th percentile of risk.</li>
             <li><span className="font-semibold text-gray-900">Generic cropland rate removed.</span> The IPCC 0.3 fallback credited carbon without any management change. Cropland now requires a specific practice and uses COMET-Planner county values for the exact practice and irrigation variant, without averaging variants.</li>
+            <li><span className="font-semibold text-gray-900">Non-forest reversal buffer.</span> Cropland and other non-forest land now carry Verra's 12% AFOLU minimum buffer instead of no discount.</li>
+            <li><span className="font-semibold text-gray-900">Additionality wording corrected.</span> “High” now means land at high risk of conversion (most additional) and “Conservative” means land already protected; the factors are described as illustrative assumptions rather than VM0007 values.</li>
             <li><span className="font-semibold text-gray-900">Integrity-risk badge and screening caveats added</span> so results are not read as registry-ready credit estimates.</li>
           </ul>
         </Section>
@@ -657,11 +661,13 @@ export default function Methodology() {
           </p>
           <p>
             <span className="font-semibold text-gray-900">Cropland.</span>{' '}
-            County values stand in for MLRA values; soil-carbon reversal (e.g. returning to tillage) is not modeled.
+            County values stand in for MLRA values; soil-carbon reversal (e.g. returning to tillage) is not modeled
+            in detail and is approximated by Verra's 12% minimum buffer, as for other non-forest land.
           </p>
           <p>
             <span className="font-semibold text-gray-900">Simplified additionality.</span>{' '}
-            The three additionality levels (0.60 / 0.75 / 0.90) are coarse proxies and remain the single
+            The three additionality factors (0.60 / 0.75 / 0.90) are CarbonVal's illustrative assumptions,
+            not values from Verra VM0007 or any other standard. They are coarse proxies and remain the single
             largest source of uncertainty in the model.
           </p>
           <p>

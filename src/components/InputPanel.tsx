@@ -276,7 +276,7 @@ export default function InputPanel({ inputs, onChange, ctx }: Props) {
           ))}
         </div>
         <p className="text-xs text-gray-400">
-          Calibrated to Verra VM0007 additionality scoring guidance.
+          Illustrative CarbonVal assumptions (0.60 / 0.75 / 0.90), not values from any carbon standard.
         </p>
       </div>
     </div>
