@@ -75,7 +75,11 @@ export default function ReportExport({ inputs, results, scenarioComparison, regi
     ? `CPS ${inputs.cpsNumber} — ${COMET_PRACTICES[inputs.cpsNumber].label} (${inputs.irrigated ? 'irrigated' : 'non-irrigated'})`
     : 'No practice change'
   const extraDetails: Array<[string, string]> = [
-    ['Permanence Factor', results.permanenceFactor !== null ? formatPercent(results.permanenceFactor) : 'Not modeled'],
+    ['Permanence Factor', results.permanenceFactor === null
+      ? 'Not available'
+      : results.permanenceSource === 'verra-minimum'
+        ? `${formatPercent(results.permanenceFactor)} — minimum buffer (Verra), reversal risk not modeled in detail`
+        : formatPercent(results.permanenceFactor)],
     ['Integrity Risk (CarbonVal heuristic)', `${results.integrity.level[0].toUpperCase()}${results.integrity.level.slice(1)} (score ${results.integrity.score})`],
   ]
   if (inputs.landType === 'cropland') extraDetails.unshift(['Practice', practiceLabel])

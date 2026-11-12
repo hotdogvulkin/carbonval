@@ -9,6 +9,7 @@ import {
   COMET_PRACTICE_ORDER,
   COMET_VARIANT_ORDER,
   CARB_UNMODELED_RISKS,
+  VERRA_MIN_BUFFER,
   PERMANENCE_HORIZON_YEARS,
   INTEGRITY_POINTS,
   INTEGRITY_THRESHOLDS,
@@ -65,6 +66,11 @@ export function carbUnmodeledBuffer(protectionStatus: ProtectionStatus): number 
 /** Enrollment risk ON → P25 of perm30 (= 75th percentile of risk); OFF → median. */
 export function selectPerm30(dist: Perm30Distribution, adverseSelection: boolean): number {
   return adverseSelection ? dist.p25 : dist.median
+}
+
+/** Non-forest land: Verra AFOLU minimum buffer (12%) → permanence 0.88. */
+export function verraMinimumPermanence(): number {
+  return 1 - VERRA_MIN_BUFFER
 }
 
 export function computePermanenceFactor(
@@ -182,8 +188,8 @@ function resolveSequestration(inputs: ValuationInputs, ctx: ParcelContext): Reso
     if (ctx.countyStatus === 'loading' || ctx.countyStatus === 'idle') return none('loading')
     const rate = ctx.cometRow ? selectCometRate(ctx.cometRow, cpsNumber, irrigated) : null
     if (rate === null) return none('no-cropland-data')
-    // TODO: soil-carbon reversal risk for cropland is not modeled (no sourced value).
-    return { status: 'ok', annualSequestration: cometAnnualTonnes(rate, acres), permanenceFactor: null, permanenceSource: 'not-modeled', cometRatePerAcre: rate }
+    // Reversal risk not modeled in detail: Verra AFOLU minimum buffer.
+    return { status: 'ok', annualSequestration: cometAnnualTonnes(rate, acres), permanenceFactor: verraMinimumPermanence(), permanenceSource: 'verra-minimum', cometRatePerAcre: rate }
   }
 
   const gross = acresToHectares(acres) * SEQUESTRATION_RATES[landType]
@@ -196,8 +202,8 @@ function resolveSequestration(inputs: ValuationInputs, ctx: ParcelContext): Reso
     return { status: 'ok', annualSequestration: gross, permanenceFactor: pf, permanenceSource: 'regional', cometRatePerAcre: null }
   }
 
-  // TODO: reversal risk for shrubland/grassland/wetland/other is not modeled (no sourced value).
-  return { status: 'ok', annualSequestration: gross, permanenceFactor: null, permanenceSource: 'not-modeled', cometRatePerAcre: null }
+  // Reversal risk not modeled in detail: Verra AFOLU minimum buffer.
+  return { status: 'ok', annualSequestration: gross, permanenceFactor: verraMinimumPermanence(), permanenceSource: 'verra-minimum', cometRatePerAcre: null }
 }
 
 export function calculateValuation(inputs: ValuationInputs, ctx: ParcelContext = EMPTY_CONTEXT): ValuationOutputs {

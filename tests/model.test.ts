@@ -4,8 +4,9 @@ import {
   acresToHectares, cometAnnualTonnes, carbUnmodeledBuffer, selectPerm30, computePermanenceFactor,
   combineAnnualRisk, excessMortality, permanenceFromAnnualRisk, selectCometRate, scoreIntegrityRisk,
   isLandCoverOverridden, calculateValuation, generateProjection, calculateScenarioComparison,
-  findEcoregion, hasRegionalRiskData, EMPTY_CONTEXT, type EcoFeatureCollection,
+  findEcoregion, hasRegionalRiskData, EMPTY_CONTEXT, verraMinimumPermanence, type EcoFeatureCollection,
 } from '../src/lib/carbonModel.ts'
+import { VERRA_MIN_BUFFER, ADDITIONALITY_LEVELS, ADDITIONALITY_LEVEL_DESCRIPTIONS } from '../src/lib/constants.ts'
 import type { ParcelContext, ValuationInputs, RegionalRisk } from '../src/types/index.ts'
 
 const near = (a: number, b: number, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${a} ≉ ${b}`)
@@ -124,11 +125,35 @@ test('forest valuation applies regional permanence and additionality', () => {
   near(out.netValue, out.totalCredits * 15 * 1.15 * 0.8, 1e-6)
 })
 
-test('non-forest, non-cropland: reversal risk not modeled', () => {
-  const out = calculateValuation({ ...base, landType: 'wetland', location: undefined }, EMPTY_CONTEXT)
-  assert.equal(out.status, 'ok')
-  assert.equal(out.permanenceFactor, null)
-  assert.equal(out.permanenceSource, 'not-modeled')
+test('Verra AFOLU minimum buffer: 12% → permanence 0.88', () => {
+  assert.equal(VERRA_MIN_BUFFER, 0.12)
+  near(verraMinimumPermanence(), 0.88)
+})
+
+test('non-forest, non-cropland land gets the Verra minimum buffer', () => {
+  for (const landType of ['shrubland', 'grassland', 'wetland', 'other'] as const) {
+    const out = calculateValuation({ ...base, landType, location: undefined }, EMPTY_CONTEXT)
+    assert.equal(out.status, 'ok')
+    assert.equal(out.permanenceSource, 'verra-minimum')
+    near(out.permanenceFactor!, 0.88)
+    near(out.adjustedAnnual, out.annualSequestration * 0.88 * 0.75)
+  }
+})
+
+test('cropland gets the Verra minimum buffer on the COMET rate', () => {
+  const out = calculateValuation({ ...base, landType: 'cropland', cpsNumber: 329 }, okCtx())
+  assert.equal(out.permanenceSource, 'verra-minimum')
+  near(out.permanenceFactor!, 0.88)
+  near(out.adjustedAnnual, 0.5975 * 100 * 0.88 * 0.75)
+  const none = calculateValuation({ ...base, landType: 'cropland' }, okCtx())
+  assert.equal(none.permanenceFactor, null)
+  assert.equal(none.totalCredits, 0)
+})
+
+test('additionality descriptions match factor order (higher risk of conversion → higher factor)', () => {
+  assert.ok(ADDITIONALITY_LEVELS.conservative < ADDITIONALITY_LEVELS.moderate && ADDITIONALITY_LEVELS.moderate < ADDITIONALITY_LEVELS.high)
+  assert.match(ADDITIONALITY_LEVEL_DESCRIPTIONS.high, /high risk of conversion/i)
+  assert.match(ADDITIONALITY_LEVEL_DESCRIPTIONS.conservative, /already protected/i)
 })
 
 test('integrity badge: low, medium, high', () => {

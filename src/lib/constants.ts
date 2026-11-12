@@ -79,6 +79,15 @@ export const CARB_UNMODELED_RISKS: Record<ProtectionStatus, Record<string, numbe
   },
 }
 
+// ─── Non-forest reversal buffer: Verra AFOLU minimum ───────────────────────
+// Verra, AFOLU Non-Permanence Risk Tool v4.2 (2023), Section 2.5.2: "The minimum risk rating
+// shall be 12, regardless of the risk rating calculated using Table 15." The risk rating is the
+// percentage of credits deposited in the buffer pool, so the minimum buffer is 12%.
+// https://verra.org/wp-content/uploads/2023/10/AFOLU-Non-Permanence-Risk-Tool-v4.2-FINAL.pdf
+// Applied to cropland, shrubland, grassland, wetland and other, whose reversal risk is not
+// modeled in detail: permanence factor = 1 − 0.12 = 0.88.
+export const VERRA_MIN_BUFFER = 0.12
+
 // ─── Regional reversal risk: Anderegg et al. (2022) via CarbonPlan ─────────
 // Anderegg, W.R.L., et al. (2022). Future climate risks from stress, insects and fire across US forests.
 // Ecology Letters 25(6):1510–1520. doi:10.1111/ele.14018. Data: CarbonPlan forest-risks web layers
@@ -113,7 +122,7 @@ export const INTEGRITY_THRESHOLDS: Array<{ minScore: number; level: IntegrityRis
 
 // Co-benefit price multipliers. Source as documented on the Methodology page: Ecosystem
 // Marketplace VCM price differentials (State of the Voluntary Carbon Markets 2024) and
-// IPCC AR6 WGII Ch. 2. TODO: not traceable to a specific table; see REPORT.md.
+// IPCC AR6 WGII Ch. 2. TODO: not traceable to a specific table; see REPORT-constants.md.
 export const CO_BENEFITS: Record<LandType, number> = {
   evergreenForest: 1.15,
   deciduousForest: 1.15,
@@ -139,11 +148,9 @@ export const PRICE_SCENARIO_LABELS: Record<PriceScenario, string> = {
   premium: 'Premium ($30/ton)',
 }
 
-// IPCC standard assumption for additionality (kept for reference; UI now uses ADDITIONALITY_LEVELS)
-export const ADDITIONALITY_FACTOR = 0.75
-
-// Additionality levels as documented on the Methodology page (Verra VM0007 REDD+ framework
-// guidance). TODO: these exact factors were not located in VM0007; verify (see REPORT.md).
+// Additionality factors: CarbonVal's illustrative assumptions, not taken from any standard or
+// methodology (listed under Known limitations on the Methodology page).
+// TODO: replace with a defensible source; see REPORT-constants.md for candidates.
 export const ADDITIONALITY_LEVELS: Record<AdditionalityLevel, number> = {
   conservative: 0.60,
   moderate: 0.75,
@@ -157,13 +164,13 @@ export const ADDITIONALITY_LEVEL_LABELS: Record<AdditionalityLevel, string> = {
 }
 
 export const ADDITIONALITY_LEVEL_DESCRIPTIONS: Record<AdditionalityLevel, string> = {
-  conservative: 'Land likely to be developed or converted without this project',
-  moderate: 'Some development pressure — default IPCC assumption',
-  high: 'Land already informally protected or low conversion risk',
+  conservative: 'Land already protected or unlikely to change without this project',
+  moderate: 'Some conversion or development pressure without this project',
+  high: 'Land at high risk of conversion or development without this project',
 }
 
 // Registry and verification cost share (Verra, ACR, CAR registries, as documented on the
-// Methodology page). TODO: no single published source for 20%; see REPORT.md.
+// Methodology page). TODO: no single published source for 20%; see REPORT-constants.md.
 export const VERIFICATION_COST = 0.20
 
 // U.S. EPA, Greenhouse Gas Emissions from a Typical Passenger Vehicle, EPA-420-F-23-014 (June 2023)

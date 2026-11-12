@@ -71,7 +71,7 @@ export type ValuationStatus =
   | 'no-regional-data'
   | 'no-cropland-data'
 
-export type PermanenceSource = 'regional' | 'not-modeled'
+export type PermanenceSource = 'regional' | 'verra-minimum' | 'not-modeled'
 
 export interface IntegrityRisk {
   level: IntegrityRiskLevel

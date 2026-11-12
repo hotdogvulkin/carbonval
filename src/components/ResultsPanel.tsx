@@ -164,7 +164,7 @@ export default function ResultsPanel({ inputs, ctx = EMPTY_CONTEXT, classificati
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Reversal Risk &amp; Data</p>
         <Row label="Permanence factor">
           <span className="font-mono font-semibold text-gray-900">
-            {results.permanenceFactor !== null ? formatPercent(results.permanenceFactor) : 'Not modeled'}
+            {results.permanenceFactor !== null ? formatPercent(results.permanenceFactor) : 'Not available'}
           </span>
         </Row>
         {forest && (
@@ -179,11 +179,9 @@ export default function ResultsPanel({ inputs, ctx = EMPTY_CONTEXT, classificati
             <span className="font-mono text-xs text-gray-700">{formatNumber(ctx.region.riskPercentile, 0)}th</span>
           </Row>
         )}
-        {results.permanenceSource === 'not-modeled' && results.status === 'ok' && (
+        {results.permanenceSource === 'verra-minimum' && (
           <p className="text-xs text-gray-500 leading-snug">
-            {inputs.landType === 'cropland'
-              ? 'Soil-carbon reversal risk is not modeled; COMET-Planner values are shown without a reversal discount.'
-              : 'Reversal risk is only modeled for forest land types; this estimate has no reversal discount.'}
+            Minimum buffer (Verra), reversal risk not modeled in detail: the 12% AFOLU minimum buffer is applied.
           </p>
         )}
         {results.cometRatePerAcre !== null && (
