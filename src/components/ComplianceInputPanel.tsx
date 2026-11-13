@@ -2,10 +2,13 @@ import type { CARBInputs, CARBSector, CompliancePeriod } from '../types'
 import {
   CARB_SECTOR_LABELS,
   COMPLIANCE_PERIOD_LABELS,
+  COMPLIANCE_PERIODS,
   FREE_ALLOCATION_RANGES,
   DEFAULT_ALLOWANCE_PRICE,
   DEFAULT_OFFSET_PRICE,
+  PRICE_BOUNDS_YEAR,
 } from '../lib/carbConstants'
+import { priceBoundsForYear, clampAllowancePrice, currentYear } from '../lib/carbModel'
 
 interface Props {
   inputs: CARBInputs
@@ -19,13 +22,16 @@ const SECTORS: CARBSector[] = [
   'fuel_supplier',
 ]
 
-const COMPLIANCE_PERIODS: CompliancePeriod[] = ['2021-2023', '2024-2026', '2027-2030']
+const PERIOD_IDS: CompliancePeriod[] = COMPLIANCE_PERIODS.map(p => p.id)
 
 export default function ComplianceInputPanel({ inputs, onChange }: Props) {
   function set<K extends keyof CARBInputs>(key: K, value: CARBInputs[K]) {
     onChange({ ...inputs, [key]: value })
   }
 
+  const year = currentYear()
+  const bounds = priceBoundsForYear(year)
+  const shownPrice = clampAllowancePrice(inputs.allowancePrice, year)
   const freeAllocRange = FREE_ALLOCATION_RANGES[inputs.sector]
   const hasAllocationRange = freeAllocRange.max > 0
 
@@ -80,7 +86,7 @@ export default function ComplianceInputPanel({ inputs, onChange }: Props) {
       <div className="space-y-1.5">
         <label className="text-sm font-medium text-gray-700">Compliance Period</label>
         <div className="grid grid-cols-3 gap-2">
-          {COMPLIANCE_PERIODS.map(period => (
+          {PERIOD_IDS.map(period => (
             <button
               key={period}
               onClick={() => set('compliancePeriod', period)}
@@ -94,6 +100,10 @@ export default function ComplianceInputPanel({ inputs, onChange }: Props) {
             </button>
           ))}
         </div>
+        <p className="text-xs text-gray-400">
+          Periods per CCR Title 17 §95840 as amended in 2026 (effective Sept 1, 2026): two- and
+          three-year periods alternating after 2033, through the program's 2045 end date (AB 1207).
+        </p>
       </div>
 
       {/* Current allowance holdings */}
@@ -244,20 +254,23 @@ export default function ComplianceInputPanel({ inputs, onChange }: Props) {
                   Allowance Price
                 </label>
                 <span className="text-sm font-mono text-green-900">
-                  ${inputs.allowancePrice}/tCO₂e
+                  ${shownPrice.toFixed(2)}/tCO₂e
                 </span>
               </div>
               <input
                 type="range"
-                min="5"
-                max="100"
-                step="1"
-                value={inputs.allowancePrice}
-                onChange={e => set('allowancePrice', parseFloat(e.target.value))}
+                min={bounds.floor}
+                max={bounds.ceiling}
+                step="0.01"
+                value={shownPrice}
+                onChange={e => set('allowancePrice', clampAllowancePrice(parseFloat(e.target.value), year))}
                 className="w-full accent-green-800"
               />
               <p className="text-xs text-gray-400">
-                Default: ${DEFAULT_ALLOWANCE_PRICE} (2024 WCI auction reference)
+                Bounded by CARB's {bounds.year} Auction Reserve Price (${bounds.floor.toFixed(2)}) and
+                Price Ceiling (${bounds.ceiling.toFixed(2)}).
+                {bounds.year > PRICE_BOUNDS_YEAR && ` Escalated from CARB's published ${PRICE_BOUNDS_YEAR} values.`}
+                {' '}Default: ${DEFAULT_ALLOWANCE_PRICE} (2024 WCI auction reference).
               </p>
             </div>
 

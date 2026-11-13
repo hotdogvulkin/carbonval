@@ -121,7 +121,9 @@ export type CARBSector =
 
 export type CoverageStatus = 'mandatory' | 'voluntary_eligible' | 'not_covered'
 export type AllowanceStatus = 'short' | 'long' | 'balanced'
-export type CompliancePeriod = '2021-2023' | '2024-2026' | '2027-2030'
+export type CompliancePeriod =
+  | '2021-2023' | '2024-2026' | '2027-2028' | '2029-2030' | '2031-2033'
+  | '2034-2035' | '2036-2038' | '2039-2040' | '2041-2043' | '2044-2045'
 
 export interface CARBInputs {
   annualEmissions: number
@@ -151,18 +153,22 @@ export interface CARBResults {
   pureAllowanceCost: number
   blendedCost: number
   offsetSavings: number
-  surrenderSchedule: {
-    year1: { tons: number; cost: number }
-    year2: { tons: number; cost: number }
-    year3: { tons: number; cost: number }
-  }
+  /** Allowance price actually used: the input clamped to the year's floor and ceiling. */
+  allowancePriceUsed: number
+  priceBounds: { year: number; floor: number; ceiling: number }
+  periodYears: number
+  /** One row per year of the selected compliance period; the last year clears the remainder. */
+  surrenderSchedule: Array<{ label: string; share: number | null; tons: number; cost: number }>
   projection: Array<{
     year: number
+    compliancePeriod: CompliancePeriod | null
     emissions: number
     obligation: number
     allowancePrice: number
-    conservativeCost: number
+    floorPrice: number
+    ceilingPrice: number
+    floorCost: number
     baseCost: number
-    optimisticCost: number
+    ceilingCost: number
   }>
 }

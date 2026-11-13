@@ -319,3 +319,37 @@ additionality description order. `npm run build` passes.
 **Verification:** 26 tests pass (new: all co-benefit multipliers are 1.0; 888 is not selectable but
 still reads from the data). `npm run build` passes.
 
+
+## CARB compliance module fixes (2026-11-11, fourth run)
+
+1. **Compliance periods.** The post-2030 periods are defined in adopted regulation: CCR Title 17 §95840
+   as amended by CARB's 2026 Cap-and-Invest rulemaking (Final Regulation Order corrected July 15, 2026;
+   approved by OAL and filed with the Secretary of State on Aug 31, 2026; effective Sept 1, 2026).
+   - Adopted text: (f) 2027–2028, (g) 2029–2030, (h) 2031–2033, (i) later periods "alternate between a
+     duration of two calendar years and three calendar years".
+   - Applying (i) through the program's AB 1207 end date gives 2034–35, 2036–38, 2039–40, 2041–43,
+     2044–45. That ends exactly in 2045, so no "pending rulemaking" caveat was needed.
+   - The old `2027-2030` period no longer exists in the regulation and was removed.
+   - The compliance period now drives the obligation. It used to be hard-coded at 3 years and the
+     selector had no effect. Two-year periods have one 30% annual surrender, and the final year clears
+     the remainder.
+2. **Price floor and ceiling.** Official 2026 values are now in `carbConstants.ts`:
+   - Floor: Auction Reserve Price $27.94 (CARB 2026 Annual Auction Reserve Price Notice, Dec 1, 2025,
+     Table 2).
+   - Ceiling: Price Ceiling $102.52 (CARB Price Ceiling Information page).
+   - Escalation: 5% + CPI-U per year (§95911(c)(3)(A) and §95915(f)(1)(B)). Applying it to CARB's
+     2025 values with the published 3.01% CPI reproduces both 2026 values exactly.
+   - The slider now runs from the floor to the ceiling, and any price outside the range is clamped (in
+     the model too).
+   - The projection now shows cost at the floor and at the ceiling. The user's price escalates at the
+     same rate and stays inside the bounds. This replaces the old "optimistic" (50% of obligation) and
+     "base" (double-compounded) lines, which had no regulatory basis.
+   - The removed `ANNUAL_PRICE_FLOOR_INCREASE` (5%) was cited to §95841, which sets allowance budgets,
+     not prices. It also left out CPI.
+   - **Assumption (labeled in the UI and Methodology):** CARB publishes only the current year's values
+     and future CPI is unknown. Bounds after 2026 therefore hold the latest CPI measure (3.01%)
+     constant. They are projections, not published prices.
+
+**Verification:** 33 tests pass (new `tests/carb.test.ts`: period definitions and alternation,
+published 2026 bounds, escalation reproducing the 2026 values, clamping, two- vs three-year surrender
+schedules, projection range). `npm run build` passes.

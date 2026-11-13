@@ -1,4 +1,4 @@
-import type { CARBInputs, CARBResults, CoverageStatus, AllowanceStatus } from '../types'
+import type { CARBInputs, CARBResults, CoverageStatus, AllowanceStatus, CompliancePeriod } from '../types'
 import {
   COVERAGE_THRESHOLD,
   VOLUNTARY_THRESHOLD,
@@ -6,8 +6,62 @@ import {
   YEAR1_SURRENDER_PCT,
   YEAR2_SURRENDER_PCT,
   OFFSET_ELIGIBILITY_LIMIT,
-  ANNUAL_PRICE_FLOOR_INCREASE,
+  PRICE_BOUNDS_YEAR,
+  AUCTION_RESERVE_PRICE,
+  PRICE_CEILING,
+  PRICE_ESCALATION_REAL,
+  LATEST_CPI_MEASURE,
+  COMPLIANCE_PERIODS,
 } from './carbConstants'
+
+// ─── Compliance periods (CCR Title 17 §95840, 2026 amendments) ───────────────
+
+/** Number of calendar years in a compliance period. */
+export function compliancePeriodYears(period: CompliancePeriod): number {
+  const p = COMPLIANCE_PERIODS.find(c => c.id === period)
+  return p ? p.end - p.start + 1 : 3
+}
+
+/** The compliance period containing a calendar year, or null outside the defined periods. */
+export function compliancePeriodForYear(year: number): CompliancePeriod | null {
+  return COMPLIANCE_PERIODS.find(c => year >= c.start && year <= c.end)?.id ?? null
+}
+
+// ─── Price floor and ceiling (§95911(c)(3)(A), §95915(f)(1)(B)) ──────────────
+
+/** Annual escalation factor: 1 + 5% + CPI-U. Future CPI is unknown; the latest published
+ *  measure is held constant by default. */
+export function priceEscalationFactor(cpi = LATEST_CPI_MEASURE): number {
+  return 1 + PRICE_ESCALATION_REAL + cpi
+}
+
+const roundCents = (v: number) => Math.round(v * 100) / 100
+
+/** Auction Reserve Price (floor) and Price Ceiling for a year. Published values for
+ *  PRICE_BOUNDS_YEAR; later years apply the escalation rule, rounded to cents each year as CARB
+ *  publishes them. Earlier years are not modeled and return the published year's values. */
+export function priceBoundsForYear(year: number, cpi = LATEST_CPI_MEASURE): { year: number; floor: number; ceiling: number } {
+  let floor = AUCTION_RESERVE_PRICE
+  let ceiling = PRICE_CEILING
+  const f = priceEscalationFactor(cpi)
+  for (let y = PRICE_BOUNDS_YEAR + 1; y <= year; y++) {
+    floor = roundCents(floor * f)
+    ceiling = roundCents(ceiling * f)
+  }
+  return { year: Math.max(year, PRICE_BOUNDS_YEAR), floor, ceiling }
+}
+
+/** Keep a user price within the year's floor and ceiling. */
+export function clampAllowancePrice(price: number, year: number): number {
+  const { floor, ceiling } = priceBoundsForYear(year)
+  if (!Number.isFinite(price)) return floor
+  return Math.min(ceiling, Math.max(floor, price))
+}
+
+/** Calendar year used for "current" prices and projections. */
+export function currentYear(): number {
+  return new Date().getFullYear()
+}
 
 function determineCoverage(inputs: CARBInputs): CoverageStatus {
   if (
@@ -38,18 +92,21 @@ function calculateObligation(inputs: CARBInputs) {
     ? inputs.annualEmissions * (inputs.freeAllocationPct / 100)
     : 0
   const netObligation = inputs.annualEmissions - freeAllocation
-  const compliancePeriodYears = 3
-  const periodObligation = netObligation * compliancePeriodYears
-  const year1Surrender = netObligation * YEAR1_SURRENDER_PCT
-  const year2Surrender = netObligation * YEAR2_SURRENDER_PCT
-  const year3Surrender = periodObligation - year1Surrender - year2Surrender
+  const periodYears = compliancePeriodYears(inputs.compliancePeriod)
+  const periodObligation = netObligation * periodYears
+  // §95855/§95856: 30% of each non-final year's obligation is surrendered annually; the final year
+  // clears the remainder of the full compliance period obligation.
+  const annualShares = [YEAR1_SURRENDER_PCT, YEAR2_SURRENDER_PCT].slice(0, periodYears - 1)
+  const annualTons = annualShares.map(share => netObligation * share)
+  const finalTons = periodObligation - annualTons.reduce((a, b) => a + b, 0)
   return {
     freeAllocation,
     netObligation,
+    periodYears,
     periodObligation,
-    year1Surrender,
-    year2Surrender,
-    year3Surrender,
+    annualShares,
+    annualTons,
+    finalTons,
   }
 }
 
@@ -82,12 +139,13 @@ function calculateExposure(netExposure: number) {
 
 function calculateCost(
   inputs: CARBInputs,
+  price: number,
   exposure: ReturnType<typeof calculateExposure>,
   obligation: ReturnType<typeof calculateObligation>,
   position: ReturnType<typeof calculatePosition>
 ) {
   const { tonsShort } = exposure
-  const pureAllowanceCost = tonsShort * inputs.allowancePrice
+  const pureAllowanceCost = tonsShort * price
 
   const offsetEligibilityRemaining = Math.max(
     0,
@@ -96,59 +154,66 @@ function calculateCost(
   const offsetTons = Math.min(tonsShort, offsetEligibilityRemaining)
   const allowanceTons = tonsShort - offsetTons
   const blendedCost =
-    offsetTons * inputs.offsetPrice + allowanceTons * inputs.allowancePrice
+    offsetTons * inputs.offsetPrice + allowanceTons * price
   const offsetSavings = pureAllowanceCost - blendedCost
 
-  const surrenderSchedule = {
-    year1: {
-      tons: obligation.year1Surrender,
-      cost: obligation.year1Surrender * inputs.allowancePrice,
+  const surrenderSchedule = [
+    ...obligation.annualTons.map((tons, i) => ({
+      label: `Year ${i + 1}`,
+      share: obligation.annualShares[i],
+      tons,
+      cost: tons * price,
+    })),
+    {
+      label: `Year ${obligation.periodYears} (remainder)`,
+      share: null,
+      tons: obligation.finalTons,
+      cost: obligation.finalTons * price,
     },
-    year2: {
-      tons: obligation.year2Surrender,
-      cost: obligation.year2Surrender * inputs.allowancePrice,
-    },
-    year3: {
-      tons: obligation.year3Surrender,
-      cost: obligation.year3Surrender * inputs.allowancePrice,
-    },
-  }
+  ]
 
   return { pureAllowanceCost, blendedCost, offsetSavings, surrenderSchedule }
 }
 
-function calculateProjection(inputs: CARBInputs, projectionYears = 10) {
+/** 10-year projection. The user's price escalates by the same rule as the floor and ceiling and is
+ *  clamped to each year's bounds; floor and ceiling costs show the regulatory range. */
+export function calculateProjection(inputs: CARBInputs, startYear: number, projectionYears = 10) {
+  const f = priceEscalationFactor()
+  const startPrice = clampAllowancePrice(inputs.allowancePrice, startYear)
   return Array.from({ length: projectionYears }, (_, i) => {
-    const year = new Date().getFullYear() + i
+    const year = startYear + i
     const emissions =
       inputs.annualEmissions * Math.pow(1 + inputs.emissionsGrowthRate / 100, i)
     const obligation =
       emissions *
       (1 - (inputs.receivesFreeAllocation ? inputs.freeAllocationPct / 100 : 0))
-    const allowancePrice =
-      inputs.allowancePrice * Math.pow(1 + ANNUAL_PRICE_FLOOR_INCREASE, i)
+    const { floor, ceiling } = priceBoundsForYear(year)
+    const allowancePrice = Math.min(ceiling, Math.max(floor, startPrice * Math.pow(f, i)))
 
     return {
       year,
+      compliancePeriod: compliancePeriodForYear(year),
       emissions: Math.round(emissions),
       obligation: Math.round(obligation),
-      allowancePrice: Math.round(allowancePrice * 100) / 100,
-      conservativeCost: Math.round(obligation * allowancePrice),
-      baseCost: Math.round(
-        obligation * allowancePrice * Math.pow(1 + ANNUAL_PRICE_FLOOR_INCREASE, i)
-      ),
-      optimisticCost: Math.round(obligation * 0.5 * allowancePrice),
+      allowancePrice: roundCents(allowancePrice),
+      floorPrice: floor,
+      ceilingPrice: ceiling,
+      floorCost: Math.round(obligation * floor),
+      baseCost: Math.round(obligation * allowancePrice),
+      ceilingCost: Math.round(obligation * ceiling),
     }
   })
 }
 
-export function calculateCARB(inputs: CARBInputs): CARBResults {
+export function calculateCARB(inputs: CARBInputs, asOfYear = currentYear()): CARBResults {
   const coverageStatus = determineCoverage(inputs)
+  const priceBounds = priceBoundsForYear(asOfYear)
+  const price = clampAllowancePrice(inputs.allowancePrice, asOfYear)
   const obligation = calculateObligation(inputs)
   const position = calculatePosition(inputs, obligation)
   const exposure = calculateExposure(position.netExposure)
-  const cost = calculateCost(inputs, exposure, obligation, position)
-  const projection = calculateProjection(inputs)
+  const cost = calculateCost(inputs, price, exposure, obligation, position)
+  const projection = calculateProjection(inputs, asOfYear)
 
   return {
     coverageStatus,
@@ -164,6 +229,9 @@ export function calculateCARB(inputs: CARBInputs): CARBResults {
     pureAllowanceCost: cost.pureAllowanceCost,
     blendedCost: cost.blendedCost,
     offsetSavings: cost.offsetSavings,
+    allowancePriceUsed: price,
+    priceBounds,
+    periodYears: obligation.periodYears,
     surrenderSchedule: cost.surrenderSchedule,
     projection,
   }
@@ -180,4 +248,8 @@ export function formatCarbNumber(value: number): string {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   })
+}
+
+export function formatCarbPercent(fraction: number): string {
+  return Math.round(fraction * 100) + '%'
 }

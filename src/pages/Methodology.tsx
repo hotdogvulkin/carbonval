@@ -15,7 +15,13 @@ import {
   DEFAULT_ALLOWANCE_PRICE,
   DEFAULT_OFFSET_PRICE,
   ANNUAL_CAP_DECLINE,
-  ANNUAL_PRICE_FLOOR_INCREASE,
+  COMPLIANCE_PERIODS,
+  PROGRAM_END_YEAR,
+  PRICE_BOUNDS_YEAR,
+  AUCTION_RESERVE_PRICE,
+  PRICE_CEILING,
+  PRICE_ESCALATION_REAL,
+  LATEST_CPI_MEASURE,
 } from '../lib/carbConstants'
 
 const CARB_CATEGORY_LABELS: Record<string, string> = {
@@ -735,9 +741,35 @@ export default function Methodology() {
               <span className="font-mono font-medium text-gray-900">{(YEAR2_SURRENDER_PCT * 100).toFixed(0)}% of compliance obligation</span>
             </div>
             <div className="flex justify-between border-t border-gray-200 pt-2">
-              <span className="text-gray-600">Year 3 surrender (remainder)</span>
-              <span className="font-mono font-medium text-gray-900">{(YEAR3_SURRENDER_PCT * 100).toFixed(0)}% of compliance obligation</span>
+              <span className="text-gray-600">Final-year surrender (remainder)</span>
+              <span className="font-mono font-medium text-gray-900">{(YEAR3_SURRENDER_PCT * 100).toFixed(0)}% in a three-year period; {100 - YEAR1_SURRENDER_PCT * 100}% in a two-year period</span>
             </div>
+            <p className="text-xs text-gray-500 pt-1">
+              Each non-final year surrenders {(YEAR1_SURRENDER_PCT * 100).toFixed(0)}% of that year's
+              obligation; the final year of the compliance period clears the rest. Two-year periods
+              therefore have one annual surrender, not two.
+            </p>
+          </div>
+          <div className="bg-gray-50 rounded-lg border border-gray-200 p-4 space-y-2 text-sm">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Compliance Periods — CCR §95840 (2026 amendments)</p>
+            <div className="flex flex-wrap gap-2">
+              {COMPLIANCE_PERIODS.map(cp => (
+                <span key={cp.id} className="font-mono text-xs bg-white border border-gray-200 rounded px-2 py-0.5 text-gray-900">
+                  {cp.start}–{cp.end}
+                </span>
+              ))}
+            </div>
+            <p className="text-xs text-gray-500 pt-1">
+              CARB's 2026 Cap-and-Invest amendments (approved by OAL Aug 31, 2026; effective Sept 1, 2026)
+              replaced the old 2027–2030 period with 2027–2028 and 2029–2030, and set 2031–2033 as the
+              eighth period. §95840(i) says later periods &ldquo;alternate between a duration of two
+              calendar years and three calendar years&rdquo;; CarbonVal applies that rule through the
+              program's end in {PROGRAM_END_YEAR} (AB 1207), which ends exactly with 2044–2045. Source:{' '}
+              <Citation href="https://ww2.arb.ca.gov/sites/default/files/barcu/regact/2026/cap_invest/Attachment%20A-1%20Final%20Regulation%20Order.pdf">
+                CARB Final Regulation Order (corrected July 15, 2026)
+              </Citation>
+              .
+            </p>
           </div>
           <div className="bg-gray-50 rounded-lg border border-gray-200 p-4 space-y-2 text-sm">
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Offset Eligibility — CCR §95854 (as amended by AB 1207)</p>
@@ -762,25 +794,55 @@ export default function Methodology() {
             </div>
           </div>
           <div className="bg-gray-50 rounded-lg border border-gray-200 p-4 space-y-2 text-sm">
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Price Trajectory — CARB 2022 Scoping Plan; CCR §95841</p>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Price Floor and Ceiling — CARB, {PRICE_BOUNDS_YEAR}</p>
             <div className="flex justify-between">
-              <span className="text-gray-600">Annual cap decline rate</span>
-              <span className="font-mono font-medium text-gray-900">{(ANNUAL_CAP_DECLINE * 100).toFixed(0)}%/yr</span>
+              <span className="text-gray-600">Annual Auction Reserve Price (floor)</span>
+              <span className="font-mono font-medium text-gray-900">${AUCTION_RESERVE_PRICE.toFixed(2)}/tCO₂e</span>
             </div>
             <div className="flex justify-between border-t border-gray-200 pt-2">
-              <span className="text-gray-600">Annual price floor increase</span>
-              <span className="font-mono font-medium text-gray-900">{(ANNUAL_PRICE_FLOOR_INCREASE * 100).toFixed(0)}%/yr</span>
+              <span className="text-gray-600">Price Ceiling</span>
+              <span className="font-mono font-medium text-gray-900">${PRICE_CEILING.toFixed(2)}/tCO₂e</span>
             </div>
+            <div className="flex justify-between border-t border-gray-200 pt-2">
+              <span className="text-gray-600">Annual escalation (§95911(c)(3)(A), §95915(f)(1)(B))</span>
+              <span className="font-mono font-medium text-gray-900">{(PRICE_ESCALATION_REAL * 100).toFixed(0)}% + CPI-U</span>
+            </div>
+            <div className="flex justify-between border-t border-gray-200 pt-2">
+              <span className="text-gray-600">CPI-U used for projections (latest CARB measure, held constant)</span>
+              <span className="font-mono font-medium text-gray-900">{(LATEST_CPI_MEASURE * 100).toFixed(2)}%</span>
+            </div>
+            <div className="flex justify-between border-t border-gray-200 pt-2">
+              <span className="text-gray-600">Annual cap decline rate (CARB 2022 Scoping Plan; not used in cost math)</span>
+              <span className="font-mono font-medium text-gray-900">{(ANNUAL_CAP_DECLINE * 100).toFixed(0)}%/yr</span>
+            </div>
+            <p className="text-xs text-gray-500 pt-1">
+              Sources:{' '}
+              <Citation href="https://ww2.arb.ca.gov/sites/default/files/2025-12/nc-2026_annual_reserve_price_notice_joint_auction.pdf">
+                CARB 2026 Annual Auction Reserve Price Notice (Dec 1, 2025), Table 2
+              </Citation>
+              ;{' '}
+              <Citation href="https://ww2.arb.ca.gov/our-work/programs/cap-and-trade-program/cost-containment-information/price-ceiling-information">
+                CARB Price Ceiling Information
+              </Citation>
+              . Applying the rule to CARB's published 2025 values with its CPI
+              measure reproduces both published 2026 values.
+            </p>
           </div>
           <p>
-            The compliance cost projection uses compound growth on the price floor rate
-            to model likely minimum price escalation over 10 years. The "optimistic"
-            scenario assumes 50% of the net obligation is covered by banked allowances or
-            early auction purchases. The "base" scenario compounds the price floor twice
-            (once for current price, once for future price) and represents the upper range
-            of likely cost under continued price floor escalation. These are not forecasts —
-            actual WCI auction prices depend on cap stringency, economic conditions, and
-            political factors.
+            <span className="font-semibold text-gray-900">Price bounds.</span>{' '}
+            The allowance price input is limited to the current year's floor and ceiling, and any value
+            outside them is clamped. Compliance costs use the clamped price.
+          </p>
+          <p>
+            <span className="font-semibold text-gray-900">10-year projection.</span>{' '}
+            The chart shows the cost of each year's obligation at the price floor and at the price ceiling,
+            the range the regulation allows. Both bounds escalate by 5% plus CPI-U each year. CARB publishes
+            only the current year's values; future CPI is unknown, so the projection holds CARB's latest
+            measure ({(LATEST_CPI_MEASURE * 100).toFixed(2)}%) constant, and years after {PRICE_BOUNDS_YEAR} are
+            projections, not published prices. The middle line escalates the user's price at the same rate,
+            kept within each year's bounds. Each year is labeled with its §95840 compliance period. These
+            are not price forecasts — actual auction prices depend on cap stringency, economic conditions
+            and policy.
           </p>
           <p>
             <span className="font-semibold text-gray-900">Known limitations.</span>{' '}

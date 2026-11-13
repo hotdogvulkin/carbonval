@@ -1,5 +1,6 @@
 import type { CARBResults, CoverageStatus } from '../types'
-import { formatCarbCurrency, formatCarbNumber } from '../lib/carbModel'
+import { formatCarbCurrency, formatCarbNumber, formatCarbPercent } from '../lib/carbModel'
+import { PRICE_BOUNDS_YEAR } from '../lib/carbConstants'
 import ComplianceProjectionChart from './ComplianceProjectionChart'
 
 interface Props {
@@ -184,26 +185,22 @@ export default function ComplianceResultsPanel({ results }: Props) {
               </tr>
             </thead>
             <tbody>
-              <SurrenderRow
-                label="Year 1 (30%)"
-                tons={results.surrenderSchedule.year1.tons}
-                cost={results.surrenderSchedule.year1.cost}
-              />
-              <SurrenderRow
-                label="Year 2 (30%)"
-                tons={results.surrenderSchedule.year2.tons}
-                cost={results.surrenderSchedule.year2.cost}
-              />
-              <SurrenderRow
-                label="Year 3 (40%)"
-                tons={results.surrenderSchedule.year3.tons}
-                cost={results.surrenderSchedule.year3.cost}
-              />
+              {results.surrenderSchedule.map(row => (
+                <SurrenderRow
+                  key={row.label}
+                  label={row.share !== null ? `${row.label} (${formatCarbPercent(row.share)})` : row.label}
+                  tons={row.tons}
+                  cost={row.cost}
+                />
+              ))}
             </tbody>
           </table>
         </div>
         <p className="px-5 py-3 text-xs text-gray-400 border-t border-gray-100">
-          Surrender schedule per CCR Title 17, Section 95856. Year 3 clears the remainder.
+          Surrender schedule per CCR Title 17, Section 95856, for a {results.periodYears}-year
+          compliance period (§95840). The final year clears the remainder. Costs use{' '}
+          {'$' + results.allowancePriceUsed.toFixed(2)}/tCO₂e, within CARB's {results.priceBounds.year} floor
+          (${results.priceBounds.floor.toFixed(2)}) and ceiling (${results.priceBounds.ceiling.toFixed(2)}).
         </p>
       </div>
 
@@ -232,6 +229,12 @@ export default function ComplianceResultsPanel({ results }: Props) {
           10-Year Compliance Cost Projection
         </p>
         <ComplianceProjectionChart data={results.projection} />
+        <p className="text-xs text-gray-400 mt-3 leading-relaxed">
+          Floor and ceiling follow CARB's escalation rule (5% plus CPI-U each year, §95911(c)(3)(A) and
+          §95915(f)(1)(B)) from CARB's published {PRICE_BOUNDS_YEAR} values.
+          Future inflation is unknown, so CARB's latest CPI measure is held constant; years after {PRICE_BOUNDS_YEAR} are
+          projections, not published prices. Base cost escalates your price at the same rate, kept within the bounds.
+        </p>
       </div>
     </div>
   )

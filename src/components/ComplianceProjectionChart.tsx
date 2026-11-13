@@ -27,9 +27,9 @@ function formatTooltipValue(value: number): string {
 }
 
 const LABEL_MAP: Record<string, string> = {
-  conservativeCost: 'Conservative',
-  baseCost: 'Base',
-  optimisticCost: 'Optimistic',
+  ceilingCost: 'At price ceiling',
+  baseCost: 'Your price (escalated)',
+  floorCost: 'At price floor',
 }
 
 export default function ComplianceProjectionChart({ data }: Props) {
@@ -76,8 +76,9 @@ export default function ComplianceProjectionChart({ data }: Props) {
         />
         <Line
           type="monotone"
-          dataKey="conservativeCost"
-          stroke="#6b7280"
+          dataKey="ceilingCost"
+          stroke="#b45309"
+          strokeDasharray="4 3"
           strokeWidth={1.5}
           dot={false}
           activeDot={{ r: 3 }}
@@ -92,8 +93,9 @@ export default function ComplianceProjectionChart({ data }: Props) {
         />
         <Line
           type="monotone"
-          dataKey="optimisticCost"
-          stroke="#15803d"
+          dataKey="floorCost"
+          stroke="#6b7280"
+          strokeDasharray="4 3"
           strokeWidth={1.5}
           dot={false}
           activeDot={{ r: 3 }}

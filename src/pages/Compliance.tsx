@@ -62,7 +62,7 @@ export default function Compliance() {
           <p className="text-sm text-gray-500 mt-1 leading-relaxed max-w-2xl">
             Estimate your California Cap-and-Invest compliance exposure — coverage status,
             allowance shortfall or surplus, estimated compliance cost, and a 10-year
-            projection. Based on CCR Title 17 regulatory parameters and 2024 WCI auction data.
+            projection. Based on CCR Title 17 (as amended 2026) and CARB's 2026 price floor and ceiling.
             Program extended through 2045 and renamed Cap-and-Invest by AB 1207 (Sept 2025).
           </p>
         </div>
